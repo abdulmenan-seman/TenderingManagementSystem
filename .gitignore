@@ -1,0 +1,217 @@
+# ============================================================================
+# .NET / C# Specific
+# ============================================================================
+
+# Build results
+client/
+server/
+bin/
+obj/
+out/
+
+# Compiled binaries
+*.dll
+*.exe
+*.lib
+*.so
+*.dylib
+
+# Visual Studio build
+*.vs/
+.vs/
+.vscode/
+*.vcxproj.user
+*.csproj.user
+*.vbproj.user
+
+# Build outputs
+*.o
+*.a
+*.la
+*.lo
+
+# NuGet package files
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# Local packages
+packages/
+.nuget/
+
+# MSBuild
+project.assets.json
+project.lock.json
+*.projectprops
+
+# Test Results
+TestResults/
+*.trx
+
+# ============================================================================
+# Angular / Node.js Specific (Client)
+# ============================================================================
+
+# Dependencies
+client/node_modules/
+client/npm-debug.log*
+client/yarn-error.log*
+
+# Angular
+client/dist/
+client/.angular/
+client/angular.json.bak
+
+# Environment files (if containing secrets)
+client/src/environments/environment.prod.ts
+
+# Compiled output
+client/.env
+client/.env.local
+
+# IDEs specific to Angular
+client/.idea/
+client/.vscode/
+
+# ============================================================================
+# IDE & Editor Files
+# ============================================================================
+
+# Visual Studio Code
+.vscode/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/*.code-snippets
+*.code-workspace
+
+# Visual Studio
+.vs/
+*.sln.docstates
+*.user
+*.userosscache
+*.sln.ide
+
+# JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-workspace
+
+# VS Code Workspace Settings
+workspace.code-workspace
+
+# ============================================================================
+# OS Files
+# ============================================================================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+.directory
+
+# ============================================================================
+# Log Files
+# ============================================================================
+
+logs/
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ============================================================================
+# Database Files
+# ============================================================================
+
+*.db
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+
+# ============================================================================
+# Environment & Configuration
+# ============================================================================
+
+# Environment variables (sensitive data)
+.env
+.env.local
+.env.*.local
+appsettings.Local.json
+appsettings.*.json
+!appsettings.Development.json
+!appsettings.json
+
+# Local development secrets
+secrets.json
+user-secrets/
+
+# ============================================================================
+# Build & Deployment
+# ============================================================================
+
+# Build directories
+dist/
+build/
+.next/
+.nuxt/
+coverage/
+.nyc_output/
+
+# Webpack
+.cache/
+.parcel-cache
+.parcel-cache/
+
+# Docker
+.dockerignore
+
+# ============================================================================
+# Temporary & Cache Files
+# ============================================================================
+
+*.tmp
+*.temp
+*.cache
+.cache/
+.grunt/
+
+# Rider
+.idea/
+*.sln.iml
+
+# ============================================================================
+# Project Specific (optional - adjust as needed)
+# ============================================================================
+
+# API responses/test data
+*.json.backup
+mock-data/
+
+# Generated files
+Generated/
+generated/
+
+# Temporary files
+temp/
+tmp/
