@@ -1,8 +1,6 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using TmsApi.Data;
 using TmsCoreApi.Services;
 using Scalar.AspNetCore;
 
@@ -15,6 +13,9 @@ builder.Services.AddControllers();
 builder.Services.AddProblemDetails(); 
 builder.Services.AddOpenApi();
 
+// Register TmsDbContext scoped for incoming HTTP requests
+builder.Services.AddDbContext<TmsDbContext>(options =>
+options.UseNpgsql(builder.Configuration.GetConnectionString("TenderingDatabase")));
 // Register In-Memory Storage Singletons with their abstract decoupling interfaces
 builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<ITenderService, TenderService>();

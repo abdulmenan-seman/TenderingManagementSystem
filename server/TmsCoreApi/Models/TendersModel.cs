@@ -13,7 +13,6 @@ public enum TenderStatus
 
 public class Tender
 {
-    private string _title = string.Empty;
 
     public required string Id { get; init; }
 
