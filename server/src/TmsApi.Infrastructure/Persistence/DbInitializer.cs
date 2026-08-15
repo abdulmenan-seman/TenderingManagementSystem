@@ -2,6 +2,8 @@ namespace TmsApi.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
 using TmsApi.Domain.Entities;
+using System.Reflection;
+using BCrypt.Net;
 
 public static class DbInitializer
 {
@@ -18,44 +20,76 @@ public static class DbInitializer
                 new Role("Admin"),
                 new Role("TenderOfficer"),
                 new Role("Evaluator"),
-                new Role("Supplier")
+                new Role("Bidder")
             };
 
             await context.Roles.AddRangeAsync(roles);
             await context.SaveChangesAsync();
         }
 
-        // 2. Seed Users & UserRoles
-        if (!await context.Users.AnyAsync())
-        {
-            var admin = new User("System Admin", "admin@tms.com", "$2a$11$e8O0aK7X0Kz4Z0LqR...");
-            var officer = new User("Abebe Kebede", "officer@tms.com", "$2a$11$e8O0aK7X0Kz4Z0LqR...");
-            var evaluator = new User("Dr. Tigist Haile", "evaluator@tms.com", "$2a$11$e8O0aK7X0Kz4Z0LqR...");
-            var supplierUser = new User("Ethio Tech Solutions", "supplier@ethiotech.com", "$2a$11$e8O0aK7X0Kz4Z0LqR...");
+        // 2. Seed or ensure Users & UserRoles (idempotent)
+        var adminEmail = "admin@tms.com";
+        var defaultAdminPassword = "Admin123!"; // Development-only default password
 
-            await context.Users.AddRangeAsync(admin, officer, evaluator, supplierUser);
+        // Ensure Admin user exists
+        var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+
+        var hashedAdminPassword = BCrypt.HashPassword(defaultAdminPassword);
+
+        if (adminUser == null)
+        {
+            adminUser = new User("System Admin", adminEmail, hashedAdminPassword);
+            await context.Users.AddAsync(adminUser);
+            await context.SaveChangesAsync(); // Persist to get Id
+        }
+        else
+        {
+            // Update password hash to known dev password (idempotent and safe for local dev)
+            var pwProp = typeof(User).GetProperty("PasswordHash", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            if (pwProp != null)
+            {
+                pwProp.SetValue(adminUser, hashedAdminPassword);
+                context.Users.Update(adminUser);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // Ensure Admin role assignment
+        var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
+        var alreadyAssigned = await context.UserRoles.AnyAsync(ur => ur.UserId == adminUser.Id && ur.RoleId == adminRole.Id);
+        if (!alreadyAssigned)
+        {
+            await context.UserRoles.AddAsync(new UserRole(adminUser.Id, adminRole.Id));
+            await context.SaveChangesAsync();
+        }
+
+        // Ensure other seed users exist only if no users besides admin exist
+        var otherUsersExist = await context.Users.CountAsync() > 1;
+        if (!otherUsersExist)
+        {
+            var officer = new User("Abebe Kebede", "officer@tms.com", BCrypt.HashPassword("Officer123!"));
+            var evaluator = new User("Dr. Tigist Haile", "evaluator@tms.com", BCrypt.HashPassword("Eval123!"));
+            var bidderUser = new User("Ethio Tech Solutions", "bidder@ethiotech.com", BCrypt.HashPassword("Bidder123!"));
+
+            await context.Users.AddRangeAsync(officer, evaluator, bidderUser);
             await context.SaveChangesAsync(); // Generates User IDs
 
-            // Retrieve role IDs
-            var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
             var officerRole = await context.Roles.FirstAsync(r => r.Name == "TenderOfficer");
             var evaluatorRole = await context.Roles.FirstAsync(r => r.Name == "Evaluator");
-            var supplierRole = await context.Roles.FirstAsync(r => r.Name == "Supplier");
+            var bidderRole = await context.Roles.FirstAsync(r => r.Name == "Bidder");
 
-            // Assign User Roles via UserRole join entity
             var userRoles = new List<UserRole>
             {
-                new(admin.Id, adminRole.Id),
                 new(officer.Id, officerRole.Id),
                 new(evaluator.Id, evaluatorRole.Id),
-                new(supplierUser.Id, supplierRole.Id)
+                new(bidderUser.Id, bidderRole.Id)
             };
 
             await context.UserRoles.AddRangeAsync(userRoles);
 
-            // 3. Seed Supplier Profile linked to supplierUser
+            // 3. Seed Supplier Profile linked to bidderUser
             var supplierProfile = new SupplierProfile(
-                userId: supplierUser.Id,
+                userId: bidderUser.Id,
                 companyName: "Ethio Tech Solutions PLC",
                 taxIdNumber: "TIN-9876543210",
                 businessLicenseNumber: "BL-2026-00412",

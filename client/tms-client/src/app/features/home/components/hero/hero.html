@@ -1,0 +1,108 @@
+<section class="relative bg-gradient-to-b from-brand-bg/60 via-white to-brand-bg/30 text-brand-navy overflow-hidden py-20 lg:py-28 px-4 sm:px-8 lg:px-16">
+  
+  <!-- Glowing Background Orbs -->
+  <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-200/40 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="absolute top-1/3 right-10 w-[300px] h-[300px] bg-sky-200/30 rounded-full blur-[90px] pointer-events-none"></div>
+
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+    
+    <!-- Left Column: Copy & Actions -->
+    <div class="lg:col-span-7 space-y-8">
+      
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-brand-green text-xs sm:text-sm font-semibold shadow-sm">
+        <span class="flex h-2 w-2 rounded-full bg-brand-green animate-ping"></span>
+        <span>Next-Gen Enterprise Procurement Platform</span>
+      </div>
+
+      <!-- Headline -->
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.15] text-brand-navy">
+        Streamline Tendering with <br />
+        <span class="bg-gradient-to-r from-brand-navy via-brand-blue to-brand-green bg-clip-text text-transparent">
+          Transparency & Precision
+        </span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="text-lg text-brand-muted max-w-2xl leading-relaxed">
+        Publish tenders, evaluate complex technical bids, manage criteria scores, and finalize contract awards seamlessly in one compliant end-to-end digital portal.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-wrap items-center gap-4 pt-2">
+        <button mat-flat-button routerLink="/tenders" class="!bg-brand-green hover:!bg-emerald-700 !text-white !rounded-xl !px-7 !py-6 !text-base font-medium shadow-lg shadow-emerald-600/20 transition-all transform hover:-translate-y-0.5">
+          <mat-icon class="mr-2">search</mat-icon>
+          Explore Active Tenders
+        </button>
+
+        <button mat-stroked-button routerLink="/auth/register" class="!border-teal-200 !text-brand-navy hover:!bg-teal-50/80 !rounded-xl !px-7 !py-6 !text-base font-medium shadow-sm">
+          <mat-icon class="mr-2 !text-brand-blue">business</mat-icon>
+          Register as Vendor
+        </button>
+      </div>
+
+      <!-- Quick Trust Indicators -->
+      <div class="pt-6 border-t border-teal-100 grid grid-cols-2 sm:grid-cols-4 gap-6">
+        @for (stat of stats; track stat.label) {
+          <div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight">{{ stat.value }}</div>
+            <div class="text-xs text-brand-muted font-medium mt-1">{{ stat.label }}</div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Right Column: Interactive Visual Card -->
+    <div class="lg:col-span-5">
+      <div class="relative bg-white/90 border border-teal-100 rounded-2xl p-6 sm:p-8 shadow-xl shadow-teal-900/5 backdrop-blur-xl">
+        
+        <!-- Live Bid Feed Preview -->
+        <div class="flex justify-between items-center pb-4 border-b border-teal-100">
+          <div class="flex items-center gap-2">
+            <mat-icon class="!text-brand-green">verified</mat-icon>
+            <span class="font-bold text-sm text-brand-navy">Live Tender Activity</span>
+          </div>
+          <span class="text-xs bg-emerald-100 text-brand-green px-2.5 py-1 rounded-full border border-emerald-200/80 font-mono font-semibold">Active</span>
+        </div>
+
+        <div class="space-y-4 my-6">
+          <!-- Card Item 1 -->
+          <div class="p-4 rounded-xl bg-teal-50/50 border border-teal-100 flex justify-between items-center hover:border-brand-green/50 hover:bg-teal-50 transition-all">
+            <div>
+              <p class="text-xs text-brand-blue font-mono font-semibold">TND-2026-8812</p>
+              <p class="text-sm font-semibold text-brand-navy mt-0.5">Enterprise Cloud Infrastructure</p>
+              <p class="text-xs text-brand-muted mt-1">Closing in 3 days</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-extrabold text-brand-green">$450,000</p>
+              <span class="text-[10px] text-brand-muted bg-white border border-teal-100 px-2 py-0.5 rounded font-medium shadow-xs">12 Bids</span>
+            </div>
+          </div>
+
+          <!-- Card Item 2 -->
+          <div class="p-4 rounded-xl bg-teal-50/50 border border-teal-100 flex justify-between items-center hover:border-brand-green/50 hover:bg-teal-50 transition-all">
+            <div>
+              <p class="text-xs text-brand-blue font-mono font-semibold">TND-2026-9041</p>
+              <p class="text-sm font-semibold text-brand-navy mt-0.5">National Database System Upgrade</p>
+              <p class="text-xs text-brand-muted mt-1">Under Evaluation</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-extrabold text-brand-green">$1,200,000</p>
+              <span class="text-[10px] text-brand-blue bg-sky-100/80 px-2 py-0.5 rounded font-semibold border border-sky-200/60">Scoring</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Callout Banner inside Card -->
+        <div class="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200/70 flex items-center gap-3">
+          <mat-icon class="!text-brand-green">security</mat-icon>
+          <p class="text-xs text-brand-navy font-medium leading-relaxed">
+            Encrypted bids stored securely until evaluation opening timestamp.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>

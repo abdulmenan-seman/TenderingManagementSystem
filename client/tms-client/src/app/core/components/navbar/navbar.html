@@ -1,0 +1,125 @@
+<mat-toolbar class="!bg-brand-bg/90 !text-brand-navy backdrop-blur-md border border-teal-200/60 sticky top-4 z-50 mx-2 lg:mx-6 my-3 w-[calc(100%-1rem)] lg:w-[calc(100%-3rem)] rounded-2xl px-4 lg:px-8 flex justify-between items-center h-20 shadow-lg shadow-teal-900/5">
+  
+  <!-- Brand Logo -->
+  <div class="flex items-center gap-3 cursor-pointer ml-2 mt-1" routerLink="/">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-green to-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/20">
+      <mat-icon class="!text-white">gavel</mat-icon>
+    </div>
+    <div class="flex flex-col">
+      <span class="font-bold text-xl tracking-tight leading-tight text-brand-navy">ProcureX</span>
+      <span class="text-xs text-brand-green font-semibold tracking-widest uppercase">Tender Management</span>
+    </div>
+  </div>
+
+  <!-- Navigation Links (Desktop) -->
+  <nav class="hidden md:flex items-center gap-1 font-medium text-brand-muted">
+    <a mat-button routerLink="/" routerLinkActive="!text-brand-green" [routerLinkActiveOptions]="{exact: true}" class="hover:!text-brand-navy">Home</a>
+    <a mat-button routerLink="/" fragment="active-tenders" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">Active Tenders</a>
+    <a mat-button routerLink="/solutions" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">Solutions</a>
+    <a mat-button routerLink="/about" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">About Us</a>
+    <a mat-button routerLink="/contact" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">Contact</a>
+  </nav>
+
+  <!-- Action Controls -->
+  <div class="flex items-center gap-2 sm:gap-3">
+    
+    <!-- Saved / Watched Tenders Bookmark -->
+    <button mat-icon-button class="!text-brand-muted hover:!text-brand-navy" aria-label="Saved Tenders" routerLink="/saved-tenders" title="Saved Tenders">
+      <mat-icon aria-hidden="false" [matBadge]="savedBidsCount > 0 ? savedBidsCount : null" matBadgeColor="accent" matBadgeSize="small">bookmark_border</mat-icon>
+    </button>
+
+    <!-- Desktop Auth Actions -->
+    <div class="hidden sm:flex items-center gap-2">
+      @if (authService.isAuthenticated()) {
+        <!-- Dashboard Navigation Button -->
+        <button mat-button (click)="goToDashboard()" class="!text-brand-navy font-semibold hover:!bg-brand-bg/60">
+          <mat-icon class="!text-brand-green">dashboard</mat-icon>
+          <span>Dashboard</span>
+        </button>
+
+        <!-- User Profile Avatar & Menu -->
+        <button mat-icon-button [matMenuTriggerFor]="userProfileMenu" aria-label="User options">
+          <div class="w-9 h-9 rounded-xl bg-brand-green/10 text-brand-green flex items-center justify-center font-bold text-sm border border-brand-green/30">
+            {{ authService.currentUser()?.fullName?.charAt(0) || 'U' }}
+          </div>
+        </button>
+
+        <mat-menu #userProfileMenu="matMenu" class="!bg-white !border !border-teal-100 !rounded-xl">
+          <div class="px-4 py-2 border-b border-teal-100">
+            <p class="text-xs font-bold text-brand-navy mb-0.5">{{ authService.currentUser()?.fullName }}</p>
+            <p class="text-[11px] text-brand-muted truncate mb-0">{{ authService.currentUser()?.email }}</p>
+          </div>
+          <button mat-menu-item (click)="goToDashboard()">
+            <mat-icon class="!text-brand-green">dashboard</mat-icon>
+            <span class="text-brand-navy">My Dashboard</span>
+          </button>
+          <mat-divider class="!border-teal-100"></mat-divider>
+          <button mat-menu-item (click)="onLogout()">
+            <mat-icon class="!text-red-500">logout</mat-icon>
+            <span class="text-red-600 font-medium">Sign Out</span>
+          </button>
+        </mat-menu>
+      } @else {
+        <!-- Public Unauthenticated Links -->
+        <a mat-button routerLink="/auth/login" class="!text-brand-navy hover:!text-brand-blue font-medium">
+          Sign In
+        </a>
+        
+        <a mat-flat-button routerLink="/auth/register" class="!bg-brand-green hover:!bg-emerald-700 !text-white !rounded-xl !px-5 !py-2 shadow-md shadow-emerald-600/20 font-medium">
+          Register Company
+        </a>
+      }
+    </div>
+
+    <!-- Mobile Navigation Menu -->
+    <button mat-icon-button class="md:hidden !text-brand-navy" [matMenuTriggerFor]="mobileNav" aria-label="Open menu">
+      <mat-icon>menu</mat-icon>
+    </button>
+
+    <mat-menu #mobileNav="matMenu" class="!bg-white !border !border-teal-100 !rounded-xl">
+      <button mat-menu-item routerLink="/">
+        <mat-icon class="!text-brand-navy">home</mat-icon>
+        <span class="text-brand-navy">Home</span>
+      </button>
+      <button mat-menu-item routerLink="/" fragment="active-tenders">
+        <mat-icon class="!text-brand-blue">search</mat-icon>
+        <span class="text-brand-navy">Active Tenders</span>
+      </button>
+      <button mat-menu-item routerLink="/solutions">
+        <mat-icon class="!text-brand-green">widgets</mat-icon>
+        <span class="text-brand-navy">Solutions</span>
+      </button>
+      <button mat-menu-item routerLink="/about">
+        <mat-icon class="!text-brand-muted">info</mat-icon>
+        <span class="text-brand-navy">About Us</span>
+      </button>
+      <button mat-menu-item routerLink="/contact">
+        <mat-icon class="!text-brand-muted">mail</mat-icon>
+        <span class="text-brand-navy">Contact</span>
+      </button>
+
+      <mat-divider class="!border-teal-100"></mat-divider>
+
+      @if (authService.isAuthenticated()) {
+        <button mat-menu-item (click)="goToDashboard()">
+          <mat-icon class="!text-brand-green">dashboard</mat-icon>
+          <span class="text-brand-navy font-semibold">Dashboard</span>
+        </button>
+        <button mat-menu-item (click)="onLogout()">
+          <mat-icon class="!text-red-500">logout</mat-icon>
+          <span class="text-red-600 font-semibold">Sign Out</span>
+        </button>
+      } @else {
+        <button mat-menu-item routerLink="/auth/login">
+          <mat-icon class="!text-brand-blue">login</mat-icon>
+          <span class="text-brand-navy">Sign In</span>
+        </button>
+        <button mat-menu-item routerLink="/auth/register">
+          <mat-icon class="!text-brand-green">person_add</mat-icon>
+          <span class="text-brand-navy font-semibold">Register Company</span>
+        </button>
+      }
+    </mat-menu>
+
+  </div>
+</mat-toolbar>

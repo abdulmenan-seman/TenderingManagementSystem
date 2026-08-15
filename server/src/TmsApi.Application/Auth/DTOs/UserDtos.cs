@@ -3,8 +3,7 @@ namespace TmsApi.Application.Auth.DTOs;
 public record RegisterUserRequestDto(
     string FullName,
     string Email,
-    string Password,
-    int RoleId
+    string Password
 );
 
 public record CreateSupplierProfileRequestDto(

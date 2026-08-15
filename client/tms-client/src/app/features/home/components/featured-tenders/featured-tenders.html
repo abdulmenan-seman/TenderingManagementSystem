@@ -1,0 +1,68 @@
+<section id="active-tenders" class="py-16 px-4 sm:px-8 lg:px-16 bg-white border-y border-teal-100/80">
+  <div class="max-w-7xl mx-auto space-y-10">
+    
+    <!-- Section Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div>
+        <div class="inline-flex items-center gap-1.5 text-xs font-bold tracking-widest text-brand-green uppercase mb-2">
+          <mat-icon class="!w-4 !h-4 !text-base">auto_awesome</mat-icon>
+          <span>Curated Opportunities</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-brand-navy tracking-tight">
+          Featured Active Tenders
+        </h2>
+        <p class="text-brand-muted mt-2 text-base max-w-xl">
+          Browse verified procurement requests open for technical and financial bid submissions.
+        </p>
+      </div>
+
+      <a mat-stroked-button routerLink="/tenders" class="!border-teal-200 !text-brand-navy hover:!bg-brand-bg !rounded-xl !px-5 !py-2.5 font-semibold w-fit">
+        <span>View All Tenders</span>
+        <mat-icon class="ml-1 !text-brand-blue">arrow_forward</mat-icon>
+      </a>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (tender of tenders; track tender.id) {
+        <div class="bg-brand-bg/40 border border-teal-100/90 rounded-2xl p-6 flex flex-col justify-between hover:shadow-xl hover:shadow-teal-900/5 hover:border-brand-green/40 transition-all duration-300 group">
+          
+          <div>
+            <!-- Top Metadata Badges -->
+            <div class="flex justify-between items-center gap-2 mb-4">
+              <span class="text-xs font-mono font-bold text-brand-blue bg-sky-100/80 px-2.5 py-1 rounded-md border border-sky-200/60">
+                {{ tender.code }}
+              </span>
+
+              <span [class]="tender.status === 'Closing Soon' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-brand-green border-emerald-200'" class="text-xs font-semibold px-2.5 py-1 rounded-full border">
+                {{ tender.status }}
+              </span>
+            </div>
+
+            <!-- Title & Category -->
+            <h3 class="text-lg font-bold text-brand-navy group-hover:text-brand-green transition-colors leading-snug">
+              {{ tender.title }}
+            </h3>
+            <p class="text-xs text-brand-muted font-medium mt-1">
+              Category: <span class="text-slate-700 font-semibold">{{ tender.category }}</span>
+            </p>
+          </div>
+
+          <!-- Bottom Summary & Action -->
+          <div class="mt-8 pt-4 border-t border-teal-100/80 flex items-center justify-between">
+            <div>
+              <p class="text-[11px] text-brand-muted uppercase font-semibold tracking-wider">Estimated Budget</p>
+              <p class="text-lg font-extrabold text-brand-navy">{{ tender.budget }}</p>
+            </div>
+
+            <a mat-flat-button [routerLink]="['/tenders', tender.id]" class="!bg-brand-green hover:!bg-emerald-700 !text-white !rounded-xl !px-4 !py-1.5 shadow-sm">
+              <span>Apply Bid</span>
+            </a>
+          </div>
+
+        </div>
+      }
+    </div>
+
+  </div>
+</section>

@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { 
+  height: 100%; 
+  margin: 0; 
+  background-color: #e8fdfc; /* Matches brand-bg */
+  color: #1d4ed8;            /* Matches brand-navy */
+  font-family: Roboto, "Helvetica Neue", sans-serif; 
+}
+/* src/styles.scss */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Accessibility: Respect user settings for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

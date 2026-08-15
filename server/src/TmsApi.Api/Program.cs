@@ -56,7 +56,23 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueLimit = 0;
     });
 });
+// Load allowed origins from appsettings.Development.json
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins").Get<string[]>() 
+    ?? ["http://localhost:4200"];
 
+// Register the CORS policy in DI container
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("TmsClient", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials() // Vital for HttpOnly auth cookies in upcoming sessions
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+    });
+});
 // 5. Dependency Injection Registration
 builder.Services.AddInfrastructureServices();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -96,6 +112,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("TmsClient");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

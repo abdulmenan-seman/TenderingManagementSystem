@@ -62,14 +62,14 @@ public class UserService : IUserService
 
         if (emailExists)
         {
-            throw new InvalidOperationException($"A user with email '{dto.Email}' already exists.");
+            throw new TmsApi.Application.Common.Exceptions.ConflictException($"A user with email '{dto.Email}' already exists.");
         }
 
         // 2. Validate role exists
-        var role = await _context.Roles.FindAsync(new object[] { dto.RoleId }, cancellationToken);
+        var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Bidder", cancellationToken);
         if (role == null)
         {
-            throw new KeyNotFoundException($"Role with ID {dto.RoleId} was not found.");
+            throw new KeyNotFoundException($"Default role 'Bidder' was not found in the database.");
         }
 
         // 3. Hash password
@@ -81,7 +81,7 @@ public class UserService : IUserService
         await _context.SaveChangesAsync(cancellationToken);
 
         // 5. Assign Role
-        var userRole = new UserRole(user.Id, dto.RoleId);
+        var userRole = new UserRole(user.Id, role.Id);
         _context.UserRoles.Add(userRole);
         await _context.SaveChangesAsync(cancellationToken);
 
