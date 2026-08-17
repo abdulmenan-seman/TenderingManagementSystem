@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, switchMap, tap } from 'rxjs';
+import { Observable, catchError, of, switchMap, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { 
   LoginRequestDto, 
@@ -20,14 +20,31 @@ export class AuthService {
   private readonly AUTH_URL = `${environment.apiUrl}/auth`;
   private readonly SUPPLIER_URL = `${environment.apiUrl}/supplier-profiles`;
 
-
   // Reactive state using Angular Signals
   currentUser = signal<AuthResponseDto | null>(null);
   supplierProfile = signal<SupplierProfileResponseDto | null>(null);
   isAuthenticated = computed(() => !!this.currentUser());
 
+  constructor() {
+    // Re-hydrate session state on page refresh using the cookie
+    this.checkSession().subscribe();
+  }
+
+  /**
+   * Checks if an active session cookie exists on server startup/reload.
+   */
+  checkSession(): Observable<AuthResponseDto | null> {
+    return this.http.get<AuthResponseDto>(`${this.AUTH_URL}/me`, { withCredentials: true }).pipe(
+      tap((user) => this.currentUser.set(user)),
+      catchError(() => {
+        this.currentUser.set(null);
+        return of(null);
+      })
+    );
+  }
+
   login(credentials: LoginRequestDto): Observable<AuthResponseDto> {
-    return this.http.post<AuthResponseDto>(`${this.AUTH_URL}/login`, credentials).pipe(
+    return this.http.post<AuthResponseDto>(`${this.AUTH_URL}/login`, credentials, { withCredentials: true }).pipe(
       tap((response) => {
         this.currentUser.set(response);
       })
@@ -35,19 +52,19 @@ export class AuthService {
   }
 
   registerUser(data: RegisterUserRequestDto): Observable<UserResponseDto> {
-    return this.http.post<UserResponseDto>(`${this.AUTH_URL}/register`, data);
+    return this.http.post<UserResponseDto>(`${this.AUTH_URL}/register`, data, { withCredentials: true });
   }
 
   createSupplierProfile(profile: CreateSupplierProfileRequestDto): Observable<SupplierProfileResponseDto> {
-    return this.http.post<SupplierProfileResponseDto>(this.SUPPLIER_URL, profile).pipe(
+    return this.http.post<SupplierProfileResponseDto>(this.SUPPLIER_URL, profile, { withCredentials: true }).pipe(
       tap((res) => this.supplierProfile.set(res))
     );
   }
 
   /**
    * Orchestrates full Bidder/Supplier registration flow:
-   * 1. Register User (User Account)
-   * 2. Authenticate User (Get Auth Token & UserId)
+   * 1. Register User Account
+   * 2. Authenticate User (Server sets HTTP-Only cookie and returns Auth DTO)
    * 3. Create Supplier Profile bound to UserId
    */
   registerAndSetupSupplier(
@@ -67,13 +84,19 @@ export class AuthService {
   }
 
   logout(): void {
-    this.currentUser.set(null);
-    this.supplierProfile.set(null);
-    this.router.navigate(['/auth/login']);
+    // Notify the backend to expire/clear the HTTP cookie
+    this.http.post(`${this.AUTH_URL}/logout`, {}, { withCredentials: true }).pipe(
+      catchError(() => of(null)) // Ensure local clean-up even if network request fails
+    ).subscribe(() => {
+      this.currentUser.set(null);
+      this.supplierProfile.set(null);
+      this.router.navigate(['/auth/login']);
+    });
   }
 
   navigateToDashboard(): void {
     const roles = this.currentUser()?.roles || [];
+    
     if (roles.includes('Admin')) {
       this.router.navigate(['/dashboard/admin']);
     } else if (roles.includes('TenderOfficer')) {

@@ -21,4 +21,28 @@ public class User
         Email = email;
         PasswordHash = passwordHash;
     }
+
+    public void UpdateProfile(string fullName, string email, bool isActive)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fullName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+
+        FullName = fullName;
+        Email = email;
+        IsActive = isActive;
+    }
+
+    public void SetPasswordHash(string passwordHash)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
+        PasswordHash = passwordHash;
+    }
+
+    public void SetActiveStatus(bool isActive)
+    {
+        IsActive = isActive;
+    }
+
+    public void Deactivate() => IsActive = false;
+    public void SoftDelete() => IsDeleted = true;
 }
