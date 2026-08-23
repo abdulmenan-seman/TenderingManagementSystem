@@ -35,12 +35,7 @@ public class SubmitBidCommandHandler : IRequestHandler<SubmitBidCommand, Result<
             return Result<int>.Failure("The submission deadline for this tender has passed.");
         }
 
-        // Verify Supplier user exists
-        var supplier = await _context.Users.FindAsync(new object[] { dto.SupplierId }, cancellationToken);
-        if (supplier is null)
-        {
-            return Result<int>.Failure($"Supplier with User ID {dto.SupplierId} was not found.");
-        }
+
 
         try
         {

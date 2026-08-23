@@ -1,112 +1,183 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, catchError, of, switchMap, tap } from 'rxjs';
+import { Observable, tap, catchError, throwError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { 
-  LoginRequestDto, 
-  AuthResponseDto, 
-  RegisterUserRequestDto, 
-  UserResponseDto,
-  CreateSupplierProfileRequestDto,
-  SupplierProfileResponseDto
+  User, 
+  TokenResponse, 
+  LoginRequest, 
+  RegisterBidderRequest, 
+  RefreshTokenRequest 
 } from '../models/auth.models';
 
-@Injectable({ providedIn: 'root' })
+export interface RegisterSupplierUserData {
+  fullName: string;
+  email: string;
+  password: string;
+}
+
+export interface RegisterSupplierProfileData {
+  companyName: string;
+  contactPerson: string;
+  taxIdNumber: string;
+  businessLicenseNumber: string;
+  phoneNumber: string;
+  address: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
 export class AuthService {
-  private http = inject(HttpClient);
-  private router = inject(Router);
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+  private readonly apiUrl = `${environment.apiUrl || 'http://localhost:5000/api/v1'}/auth`;
 
-  private readonly AUTH_URL = `${environment.apiUrl}/auth`;
-  private readonly SUPPLIER_URL = `${environment.apiUrl}/supplier-profiles`;
+  // 1. In-Memory Token & User State using Angular 21 Signals
+  private readonly accessTokenSignal = signal<string | null>(null);
+  readonly currentUser = signal<User | null>(this.getStoredUser());
 
-  // Reactive state using Angular Signals
-  currentUser = signal<AuthResponseDto | null>(null);
-  supplierProfile = signal<SupplierProfileResponseDto | null>(null);
-  isAuthenticated = computed(() => !!this.currentUser());
+  // 2. Computed Reactivity
+  readonly isAuthenticated = computed(() => !!this.accessTokenSignal());
+  readonly userRole = computed(() => this.currentUser()?.role ?? null);
 
-  constructor() {
-    // Re-hydrate session state on page refresh using the cookie
-    this.checkSession().subscribe();
+  login(credentials: LoginRequest): Observable<TokenResponse> {
+    return this.http.post<TokenResponse>(`${this.apiUrl}/login`, credentials).pipe(
+      tap(response => this.handleAuthenticationSuccess(response))
+    );
   }
 
-  /**
-   * Checks if an active session cookie exists on server startup/reload.
-   */
-  checkSession(): Observable<AuthResponseDto | null> {
-    return this.http.get<AuthResponseDto>(`${this.AUTH_URL}/me`, { withCredentials: true }).pipe(
-      tap((user) => this.currentUser.set(user)),
-      catchError(() => {
-        this.currentUser.set(null);
-        return of(null);
+  registerBidder(data: RegisterBidderRequest): Observable<User> {
+    return this.http.post<User>(`${this.apiUrl}/register-bidder`, data);
+  }
+
+  // Updated method in auth.service.ts
+registerAndSetupSupplier(
+  userData: RegisterSupplierUserData, 
+  profileData: RegisterSupplierProfileData
+): Observable<User> {
+  const payload: RegisterBidderRequest = {
+    fullName: userData.fullName,
+    email: userData.email,
+    password: userData.password,
+    companyName: profileData.companyName,
+    contactPerson: profileData.contactPerson,
+    taxId: profileData.taxIdNumber,                      // Maps to C# TaxId
+    businessLicenseNo: profileData.businessLicenseNumber,// Maps to C# BusinessLicenseNo
+    phoneNumber: profileData.phoneNumber,
+    address: profileData.address
+  };
+
+  return this.http.post<User>(`${this.apiUrl}/register-bidder`, payload);
+}
+
+  // 4. Role-based Dashboard Navigation (Aligned with app.routes.ts)
+  navigateToDashboard(): void {
+    const role = this.userRole()?.toLowerCase();
+    
+    switch (role) {
+      case 'admin':
+        this.router.navigate(['/dashboard/admin']);
+        break;
+
+      case 'tenderofficer':
+    
+        this.router.navigate(['/dashboard/procurement']);
+        break;
+
+      case 'bidder':
+      case 'supplier':
+      default:
+        this.router.navigate(['/dashboard/bidder']);
+        break;
+        case 'evaluator':
+        this.router.navigate(['/dashboard/evaluator']);
+        break;
+    }
+  }
+
+  // 5. Explicit JSON Payload Refresh Token Call
+  refreshToken(): Observable<TokenResponse> {
+    const currentAccessToken = this.getAccessToken() || '';
+    const storedRefreshToken = this.getRefreshToken() || '';
+
+    if (!storedRefreshToken) {
+      this.logout();
+      return throwError(() => new Error('No refresh token available.'));
+    }
+
+    const payload: RefreshTokenRequest = {
+      accessToken: currentAccessToken,
+      refreshToken: storedRefreshToken
+    };
+
+    return this.http.post<TokenResponse>(`${this.apiUrl}/refresh`, payload).pipe(
+      tap(response => this.handleAuthenticationSuccess(response)),
+      catchError(error => {
+        this.logout();
+        return throwError(() => error);
       })
     );
   }
 
-  login(credentials: LoginRequestDto): Observable<AuthResponseDto> {
-    return this.http.post<AuthResponseDto>(`${this.AUTH_URL}/login`, credentials, { withCredentials: true }).pipe(
-      tap((response) => {
-        this.currentUser.set(response);
-      })
-    );
-  }
-
-  registerUser(data: RegisterUserRequestDto): Observable<UserResponseDto> {
-    return this.http.post<UserResponseDto>(`${this.AUTH_URL}/register`, data, { withCredentials: true });
-  }
-
-  createSupplierProfile(profile: CreateSupplierProfileRequestDto): Observable<SupplierProfileResponseDto> {
-    return this.http.post<SupplierProfileResponseDto>(this.SUPPLIER_URL, profile, { withCredentials: true }).pipe(
-      tap((res) => this.supplierProfile.set(res))
-    );
-  }
-
-  /**
-   * Orchestrates full Bidder/Supplier registration flow:
-   * 1. Register User Account
-   * 2. Authenticate User (Server sets HTTP-Only cookie and returns Auth DTO)
-   * 3. Create Supplier Profile bound to UserId
-   */
-  registerAndSetupSupplier(
-    userData: { fullName: string; email: string; password: string },
-    profileData: Omit<CreateSupplierProfileRequestDto, 'userId'>
-  ): Observable<SupplierProfileResponseDto> {
-    return this.registerUser(userData).pipe(
-      switchMap(() => this.login({ email: userData.email, password: userData.password })),
-      switchMap((authRes) => {
-        const fullProfilePayload: CreateSupplierProfileRequestDto = {
-          userId: authRes.userId,
-          ...profileData
-        };
-        return this.createSupplierProfile(fullProfilePayload);
-      })
-    );
+  // 6. App Initialization Bootstrap (Restores access token on page refresh)
+  initializeAuthSession(): Observable<TokenResponse | null> {
+    if (this.getRefreshToken()) {
+      return this.refreshToken().pipe(
+        catchError(() => of(null))
+      );
+    }
+    return of(null);
   }
 
   logout(): void {
-    // Notify the backend to expire/clear the HTTP cookie
-    this.http.post(`${this.AUTH_URL}/logout`, {}, { withCredentials: true }).pipe(
-      catchError(() => of(null)) // Ensure local clean-up even if network request fails
-    ).subscribe(() => {
-      this.currentUser.set(null);
-      this.supplierProfile.set(null);
-      this.router.navigate(['/auth/login']);
-    });
+    const refreshToken = this.getRefreshToken();
+
+    // Fire-and-forget token revocation request
+    if (refreshToken) {
+      this.http.post(`${this.apiUrl}/revoke`, { refreshToken }).subscribe({
+        error: () => {} // Ignore errors on logout
+      });
+    }
+    
+    // Clear persistent storage
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_info');
+    
+    // Reset in-memory signals
+    this.accessTokenSignal.set(null);
+    this.currentUser.set(null);
+    
+    this.router.navigate(['/auth/login']);
   }
 
-  navigateToDashboard(): void {
-    const roles = this.currentUser()?.roles || [];
-    
-    if (roles.includes('Admin')) {
-      this.router.navigate(['/dashboard/admin']);
-    } else if (roles.includes('TenderOfficer')) {
-      this.router.navigate(['/dashboard/procurement']);
-    } else if (roles.includes('Evaluator')) {
-      this.router.navigate(['/dashboard/evaluation']);
-    } else if (roles.includes('Bidder')) {
-      this.router.navigate(['/dashboard/bidder']);
-    } else {
-      this.router.navigate(['/']);
+  // In-Memory Access Token Getter
+  getAccessToken(): string | null {
+    return this.accessTokenSignal();
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refresh_token');
+  }
+
+  private handleAuthenticationSuccess(response: TokenResponse): void {
+    // Keep Access Token in Memory ONLY
+    this.accessTokenSignal.set(response.accessToken);
+    this.currentUser.set(response.user);
+
+    // Persist Refresh Token & Profile info in localStorage
+    localStorage.setItem('refresh_token', response.refreshToken);
+    localStorage.setItem('user_info', JSON.stringify(response.user));
+  }
+
+  private getStoredUser(): User | null {
+    const userStr = localStorage.getItem('user_info');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr) as User;
+    } catch {
+      return null;
     }
   }
 }

@@ -1,47 +1,36 @@
-// Authentication & User DTOs
-export interface LoginRequestDto {
-  email: string;
-  password: string;
-}
-
-export interface AuthResponseDto {
-  userId: number;
-  fullName: string;
-  email: string;
-  token: string;
-  roles: string[];
-}
-
-export interface RegisterUserRequestDto {
-  fullName: string;
-  email: string;
-  password: string;
-}
-
-export interface UserResponseDto {
+export interface User {
   id: number;
-  fullName: string;
   email: string;
-  isActive: boolean;
-  roles: string[];
+  fullName: string;
+  role: 'Admin' | 'TenderOfficer' | 'Evaluator' | 'Bidder';
+  companyName?: string;
 }
 
-// Supplier Profile DTOs
-export interface CreateSupplierProfileRequestDto {
-  userId: number;
+export interface TokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  refreshTokenExpiration: string;
+  user: User;
+}
+
+export interface RegisterBidderRequest {
+  email: string;
+  password: string;
+  fullName: string;
   companyName: string;
-  taxIdNumber: string;
-  businessLicenseNumber: string;
+  contactPerson: string;
+  businessLicenseNo: string; // Matched with C# BusinessLicenseNo
+  taxId: string;             // Matched with C# TaxId
   address: string;
   phoneNumber: string;
 }
 
-export interface SupplierProfileResponseDto {
-  id: number;
-  userId: number;
-  companyName: string;
-  taxIdNumber: string;
-  businessLicenseNumber: string;
-  address: string;
-  phoneNumber: string;
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RefreshTokenRequest {
+  accessToken: string;
+  refreshToken: string;
 }

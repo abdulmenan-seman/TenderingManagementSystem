@@ -17,7 +17,11 @@ import {
 })
 export class UserManagementService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/v1/users`;
+
+  // Type assertion resolves potential environment typing issues
+  private baseUrl = (environment as { apiUrl: string }).apiUrl;
+  private usersUrl = `${this.baseUrl}/users`;
+  private authUrl = `${this.baseUrl}/auth`;
 
   getUsers(query?: UserFilterQuery): Observable<PagedResult<UserListItem>> {
     let params = new HttpParams();
@@ -29,36 +33,37 @@ export class UserManagementService {
       params = params.set('pageSize', query.pageSize);
     }
 
-    return this.http.get<PagedResult<UserListItem>>(this.apiUrl, { params });
+    // Pointing directly to GET /api/v1/users to fix 404
+    return this.http.get<PagedResult<UserListItem>>(`${this.usersUrl}`, { params });
   }
 
   getUserById(id: number): Observable<UserListItem> {
-    return this.http.get<UserListItem>(`${this.apiUrl}/${id}`);
+    return this.http.get<UserListItem>(`${this.usersUrl}/${id}`);
   }
 
   createUser(dto: CreateUserDto): Observable<UserListItem> {
-    return this.http.post<UserListItem>(this.apiUrl, dto);
+    return this.http.post<UserListItem>(`${this.authUrl}/create-staff`, dto);
   }
 
   updateUser(id: number, dto: UpdateUserDto): Observable<UserListItem> {
-    return this.http.put<UserListItem>(`${this.apiUrl}/${id}`, dto);
+    return this.http.put<UserListItem>(`${this.authUrl}/staff/${id}`, dto);
   }
 
   toggleUserStatus(id: number, isActive: boolean): Observable<void> {
-    return this.http.patch<void>(`${this.apiUrl}/${id}/status`, { isActive });
+    return this.http.patch<void>(`${this.authUrl}/staff/${id}/status`, isActive);
   }
 
   resetPassword(id: number, dto: ResetPasswordDto): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/reset-password`, dto);
+    return this.http.post<void>(`${this.authUrl}/staff/${id}/reset-password`, dto);
   }
 
   softDeleteUser(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.usersUrl}/${id}`);
   }
 
   getLoginActivityLogs(userId?: number): Observable<LoginActivityLog[]> {
     let params = new HttpParams();
     if (userId) params = params.set('userId', userId.toString());
-    return this.http.get<LoginActivityLog[]>(`${this.apiUrl}/logs`, { params });
+    return this.http.get<LoginActivityLog[]>(`${this.usersUrl}/logs`, { params });
   }
 }

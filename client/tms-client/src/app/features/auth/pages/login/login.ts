@@ -2,10 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../../core/services/auth';
 
 @Component({
@@ -18,7 +20,8 @@ import { AuthService } from '../../../../core/services/auth';
     MatInputModule,
     MatFormFieldModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss'
@@ -37,23 +40,25 @@ export class LoginComponent {
   });
 
   onSubmit(): void {
-    if (this.loginForm.valid) {
-      this.isLoading = true;
-      this.errorMessage = '';
-      const { email, password } = this.loginForm.value;
-
-      this.authService.login({ email: email!, password: password! }).subscribe({
-        next: () => {
-          // AuthService.login() automatically sets the currentUser signal and reads roles
-          this.authService.navigateToDashboard();
-        },
-        error: (err) => {
-          this.isLoading = false;
-          this.errorMessage = err.status === 401 
-            ? 'Invalid email address or password.' 
-            : 'Unable to connect to authentication server.';
-        }
-      });
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
     }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    const { email, password } = this.loginForm.value;
+
+    this.authService.login({ email: email!, password: password! }).subscribe({
+      next: () => {
+        this.authService.navigateToDashboard();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isLoading = false;
+        this.errorMessage = err.status === 401 
+          ? 'Invalid email address or password credentials.' 
+          : 'Unable to connect to the authentication server. Please try again.';
+      }
+    });
   }
 }

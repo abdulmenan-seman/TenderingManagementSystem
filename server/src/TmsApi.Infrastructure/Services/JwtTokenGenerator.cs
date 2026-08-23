@@ -6,7 +6,6 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using TmsApi.Application.Common.Interfaces;
-using TmsApi.Domain.Entities;
 
 public class JwtTokenGenerator : IJwtTokenGenerator
 {
@@ -17,13 +16,13 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _configuration = configuration;
     }
 
-    public string GenerateToken(User user, IEnumerable<string> roles)
+    public string GenerateToken(int userId, string email, string fullName, IList<string> roles)
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, user.FullName),
-            new(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(ClaimTypes.Name, fullName),
+            new(ClaimTypes.Email, email)
         };
 
         foreach (var role in roles)

@@ -5,10 +5,7 @@ using TmsApi.Domain.Entities;
 
 public interface ITmsDbContext
 {
-    DbSet<User> Users { get; }
-    DbSet<Role> Roles { get; }
-    DbSet<UserRole> UserRoles { get; }
-    DbSet<SupplierProfile> SupplierProfiles { get; }
+    DbSet<BidderProfile> BidderProfiles { get; }
     DbSet<Tender> Tenders { get; }
     DbSet<TenderDocument> TenderDocuments { get; }
     DbSet<EvaluationCriteria> EvaluationCriteria { get; }

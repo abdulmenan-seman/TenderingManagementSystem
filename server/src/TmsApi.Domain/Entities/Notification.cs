@@ -12,7 +12,7 @@ public class Notification
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
 
     // Navigation property
-    public User User { get; private set; } = default!;
+
 
     private Notification() { }
 

@@ -22,7 +22,7 @@ public class Tender
     public bool IsDeleted { get; private set; }
 
     // Navigation properties
-    public User CreatedByOfficer { get; private set; } = default!;
+
     public Bid? WinningBid { get; private set; }
     
     private readonly List<TenderDocument> _documents = new();

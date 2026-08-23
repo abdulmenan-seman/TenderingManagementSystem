@@ -1,1 +1,129 @@
-<p>evaluation-dashboard works!</p>
+<div class="min-h-screen bg-slate-100 flex font-sans text-slate-800">
+  <!-- Sidebar -->
+  <aside 
+    [ngClass]="isSidebarCollapsed() ? 'w-20' : 'w-64'" 
+    class="bg-[#1b4380] text-white flex flex-col transition-all duration-300 ease-in-out shrink-0 shadow-xl z-20">
+    
+    <!-- Sidebar Toggle & Header -->
+    <div class="h-20 flex items-center justify-between px-6 border-b border-blue-900/40">
+      <button 
+        (click)="toggleSidebar()" 
+        class="p-2 rounded-xl hover:bg-white/10 transition-colors text-white focus:outline-none">
+        <mat-icon class="!w-7 !h-7 !text-3xl">menu</mat-icon>
+      </button>
+      @if (!isSidebarCollapsed()) {
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-200">TMS Evaluator</span>
+      }
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
+      @for (item of navItems; track item.label) {
+        <a 
+          [routerLink]="item.route" 
+          routerLinkActive="bg-white/15 text-white font-semibold"
+          [routerLinkActiveOptions]="{ exact: item.route === '/dashboard/evaluator' }"
+          [matTooltip]="isSidebarCollapsed() ? item.label : ''"
+          matTooltipPosition="right"
+          [ngClass]="isSidebarCollapsed() ? 'justify-center px-0' : 'px-4'"
+          class="flex items-center gap-4 py-3.5 rounded-xl text-blue-100 hover:bg-white/10 transition-all cursor-pointer group">
+          <mat-icon class="shrink-0 transition-transform duration-200 group-hover:scale-110">{{ item.icon }}</mat-icon>
+          @if (!isSidebarCollapsed()) {
+            <span class="text-sm font-medium tracking-wide truncate">{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <!-- Main View Area -->
+  <div class="flex-1 flex flex-col min-w-0">
+    
+    <!-- Header Bar -->
+    <header class="h-20 bg-slate-100/80 backdrop-blur-md px-8 flex items-center justify-between z-10 sticky top-0 border-b border-slate-200/60">
+      <div>
+        <h1 class="text-2xl font-black text-[#1b4380] tracking-tight">Evaluator Dashboard</h1>
+        <p class="text-xs font-medium text-slate-500">Evaluation Committee Workspace</p>
+      </div>
+
+      <!-- Action Controls -->
+      <div class="flex items-center gap-6">
+        <button mat-button routerLink="/evaluator/notifications" class="!rounded-xl !px-3 !py-2 !text-slate-700 hover:!bg-slate-200/60">
+          <mat-icon class="text-slate-600 mr-2">notifications</mat-icon>
+          <span class="font-semibold text-sm">Notifications</span>
+        </button>
+
+        <button mat-button routerLink="/evaluator/guidelines" class="!rounded-xl !px-3 !py-2 !text-slate-700 hover:!bg-slate-200/60">
+          <mat-icon class="text-slate-600 mr-2">help</mat-icon>
+          <span class="font-semibold text-sm">Help</span>
+        </button>
+
+        <!-- User Profile Avatar Menu -->
+        <button [matMenuTriggerFor]="profileMenu" class="flex items-center gap-2 p-1 rounded-full hover:ring-4 hover:ring-slate-200 transition-all">
+          <div class="w-11 h-11 rounded-full bg-blue-200 border-2 border-white shadow-md overflow-hidden flex items-center justify-center">
+            <mat-icon class="text-blue-900 !w-8 !h-8 !text-3xl">person</mat-icon>
+          </div>
+        </button>
+
+        <mat-menu #profileMenu="matMenu" xPosition="before" class="!rounded-2xl !py-2">
+          <div class="px-4 py-2 border-b border-slate-100">
+            <p class="text-xs text-slate-400 font-medium">Logged in as</p>
+            <p class="text-sm font-bold text-slate-800">Committee Evaluator</p>
+          </div>
+          <button mat-menu-item routerLink="/profile">
+            <mat-icon>account_circle</mat-icon>
+            <span>My Profile</span>
+          </button>
+          <button mat-menu-item (click)="logout()" class="!text-red-600">
+            <mat-icon class="!text-red-600">logout</mat-icon>
+            <span>Sign Out</span>
+          </button>
+        </mat-menu>
+      </div>
+    </header>
+
+    <!-- Dashboard Content Workspace -->
+    <main class="flex-1 p-8 overflow-y-auto max-w-7xl w-full mx-auto space-y-8">
+      
+      <!-- Primary Action Cards Grid (Mapped to Required Modules) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (card of dashboardCards; track card.title) {
+          <div 
+            [routerLink]="card.route"
+            class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex items-center gap-5 group">
+            
+            <!-- Graphic Icon Container -->
+            <div [class]="card.bgGradient" class="w-20 h-20 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300">
+              <mat-icon [class]="card.iconColor" class="!w-10 !h-10 !text-4xl">{{ card.icon }}</mat-icon>
+            </div>
+
+            <!-- Card Labels -->
+            <div class="flex-1 min-w-0">
+              <h3 class="text-xl font-bold text-[#1b4380] mb-1 group-hover:text-blue-600 transition-colors">{{ card.title }}</h3>
+              <p class="text-xs font-semibold text-slate-500 border-t border-slate-100 pt-2">{{ card.subtitle }}</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Evaluator Guidelines Callout Banner -->
+      <div 
+        routerLink="/evaluator/compliance"
+        class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-lg transition-all cursor-pointer flex items-center gap-6 group">
+        
+        <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-amber-100 to-yellow-100 flex items-center justify-center shrink-0 relative shadow-inner">
+          <mat-icon class="text-amber-700 !w-10 !h-10 !text-4xl">lightbulb</mat-icon>
+          <div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow">
+            Audit
+          </div>
+        </div>
+
+        <div class="flex-1">
+          <h3 class="text-xl font-bold text-[#1b4380] mb-1 group-hover:text-blue-600 transition-colors">Evaluator Guidelines & Code of Ethics</h3>
+          <p class="text-xs font-semibold text-slate-500 border-t border-slate-100 pt-2">Review procedural requirements, declare conflicts of interest, and maintain evaluation integrity.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>

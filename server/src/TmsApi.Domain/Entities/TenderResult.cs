@@ -17,7 +17,6 @@ public class TenderResult
     // Navigation properties
     public Tender Tender { get; private set; } = default!;
     public Bid WinningBid { get; private set; } = default!;
-    public User ApprovedByOfficer { get; private set; } = default!;
 
     // Required by ORM reflection
     private TenderResult() { }

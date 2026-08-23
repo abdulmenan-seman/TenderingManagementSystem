@@ -14,7 +14,7 @@ public class Bid
 
     // Navigation properties
     public Tender Tender { get; private set; } = default!;
-    public User Supplier { get; private set; } = default!;
+
 
     private readonly List<BidDocument> _documents = new();
     public IReadOnlyCollection<BidDocument> Documents => _documents.AsReadOnly();

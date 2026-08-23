@@ -2,10 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../../core/services/auth';
 
 @Component({
@@ -18,7 +20,8 @@ import { AuthService } from '../../../../core/services/auth';
     MatInputModule,
     MatFormFieldModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './register.html',
   styleUrl: './register.scss'
@@ -33,17 +36,16 @@ export class RegisterComponent {
   errorMessage = '';
 
   registerForm = this.fb.group({
-    // Account Credentials
     fullName: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
 
-    // Supplier Profile Credentials
     companyName: ['', [Validators.required, Validators.minLength(2)]],
+    contactPerson: [''], // Removed Validators.required since field isn't in HTML template
     taxIdNumber: ['', [Validators.required]],
     businessLicenseNumber: ['', [Validators.required]],
-    phoneNumber: ['', [Validators.required, Validators.pattern('^[0-9+ ]{9,15}$')]],
+    phoneNumber: ['', [Validators.required, Validators.pattern('^[0-9+() -]{9,18}$')]], // Relaxed phone pattern
     address: ['', [Validators.required, Validators.minLength(5)]]
   }, { validators: this.passwordMatchValidator });
 
@@ -54,43 +56,46 @@ export class RegisterComponent {
   }
 
   onSubmit(): void {
-    if (this.registerForm.valid) {
-      this.isLoading = true;
-      this.errorMessage = '';
-
-      const formValue = this.registerForm.value;
-
-      const userData = {
-        fullName: formValue.fullName!,
-        email: formValue.email!,
-        password: formValue.password!
-      };
-
-      const profileData = {
-        companyName: formValue.companyName!,
-        taxIdNumber: formValue.taxIdNumber!,
-        businessLicenseNumber: formValue.businessLicenseNumber!,
-        phoneNumber: formValue.phoneNumber!,
-        address: formValue.address!
-      };
-
-      this.authService.registerAndSetupSupplier(userData, profileData).subscribe({
-        next: () => {
-          this.authService.navigateToDashboard();
-        },
-        error: (err) => {
-          this.isLoading = false;
-          if (err.status === 409) {
-            this.errorMessage = 'A user with this email address already exists.';
-          } else if (err.error?.detail) {
-            this.errorMessage = err.error.detail;
-          } else if (err.error?.title) {
-            this.errorMessage = err.error.title;
-          } else {
-            this.errorMessage = 'Registration failed. Please review your company details and try again.';
-          }
-        }
-      });
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
+      return;
     }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    const formValue = this.registerForm.value;
+
+    const userData = {
+      fullName: formValue.fullName!,
+      email: formValue.email!,
+      password: formValue.password!
+    };
+
+    const profileData = {
+      companyName: formValue.companyName!,
+      contactPerson: formValue.contactPerson || formValue.fullName!,
+      taxIdNumber: formValue.taxIdNumber!,
+      businessLicenseNumber: formValue.businessLicenseNumber!,
+      phoneNumber: formValue.phoneNumber!,
+      address: formValue.address!
+    };
+
+    this.authService.registerAndSetupSupplier(userData, profileData).subscribe({
+      next: () => {
+        this.authService.navigateToDashboard();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isLoading = false;
+        if (err.status === 409) {
+          this.errorMessage = 'A user with this email address already exists.';
+        } else if (err.error?.detail) {
+          this.errorMessage = err.error.detail;
+        } else if (err.error?.title) {
+          this.errorMessage = err.error.title;
+        } else {
+          this.errorMessage = 'Registration failed. Please review your company details and try again.';
+        }
+      }
+    });
   }
 }

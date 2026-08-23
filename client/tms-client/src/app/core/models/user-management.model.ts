@@ -28,14 +28,14 @@ export interface PagedResult<T> {
 export interface CreateUserDto {
   fullName: string;
   email: string;
+  role: string; // Changed from string[] to string to match AuthController
   password?: string;
-  roles: string[];
 }
 
 export interface UpdateUserDto {
   fullName: string;
   email: string;
-  roles: string[];
+  role: string; // Changed from string[] to string to match AuthController
   isActive: boolean;
 }
 

@@ -13,7 +13,7 @@ public class BidEvaluation
 
     // Navigation properties
     public Bid Bid { get; private set; } = default!;
-    public User Evaluator { get; private set; } = default!;
+
     public EvaluationCriteria EvaluationCriteria { get; private set; } = default!;
 
     private BidEvaluation() { }

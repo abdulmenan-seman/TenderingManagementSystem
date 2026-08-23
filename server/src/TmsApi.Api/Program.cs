@@ -1,6 +1,8 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,44 +10,81 @@ using Scalar.AspNetCore;
 using TmsApi.Api.Middleware;
 using TmsApi.Application.Common.Interfaces;
 using TmsApi.Infrastructure;
+using TmsApi.Infrastructure.Authorization;
 using TmsApi.Infrastructure.Persistence;
 using TmsApi.Infrastructure.Services;
-using TmsApi.Application.Users;
-using TmsApi.Application.Auth.Commands;
+using TmsApi.Infrastructure.Identity;
+
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. Controller & Native OpenAPI Setup
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-// 1. Native .NET 10 OpenAPI Setup
 builder.Services.AddOpenApi();
 
-// 2. Exception Handling
+// 2. Global Exception Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// 3. JWT Authentication Setup
+// 3. Antiforgery (XSRF/CSRF Protection)
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+});
+
+// 4. DbContext Registration (PostgreSQL)
+builder.Services.AddDbContext<TmsDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("TenderMsDb") 
+            ?? throw new InvalidOperationException("Connection string 'TenderMsDb' not found."),
+        b => b.MigrationsAssembly(typeof(TmsDbContext).Assembly.FullName)));
+
+builder.Services.AddScoped<ITmsDbContext>(provider => provider.GetRequiredService<TmsDbContext>());
+
+// 5. JWT Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Secret"] ?? "SuperSecretKeyForTmsApiProject2026!";
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
-builder.Services.AddAuthorization();
+// 6. Policy & Resource-Based Authorization Configuration
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("RequireProcurementOfficer", policy => policy.RequireRole("Admin", "TenderOfficer"));
+    options.AddPolicy("RequireEvaluator", policy => policy.RequireRole("Admin", "Evaluator"));
+    options.AddPolicy("RequireBidderRole", policy => policy.RequireRole("Bidder"));
+    
+    // Resource Ownership Policy
+    options.AddPolicy("MustOwnResource", policy => 
+        policy.Requirements.Add(new ResourceOwnerRequirement()));
+});
 
-// 4. Rate Limiting Policy
+// Scoped to safely resolve DbContext inside the authorization check
+builder.Services.AddScoped<IAuthorizationHandler, ResourceOwnerAuthorizationHandler>();
+
+// 7. Rate Limiting Configuration
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -56,12 +95,12 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueLimit = 0;
     });
 });
-// Load allowed origins from appsettings.Development.json
+
+// 8. CORS Policy Configuration
 var allowedOrigins = builder.Configuration
     .GetSection("AllowedOrigins").Get<string[]>() 
-    ?? ["http://localhost:4200"];
+    ?? new[] { "http://localhost:4200" };
 
-// Register the CORS policy in DI container
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("TmsClient", policy =>
@@ -69,37 +108,28 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials() // Vital for HttpOnly auth cookies in upcoming sessions
+            .AllowCredentials()
             .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
     });
 });
-// 5. Dependency Injection Registration
+
+// 9. Core Infrastructure & Application Registration (Includes Identity Core)
 builder.Services.AddInfrastructureServices();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ISupplierProfileService, SupplierProfileService>();
+
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBidService, BidService>();
 builder.Services.AddScoped<ITenderService, TenderService>();
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 builder.Services.AddScoped<IBidEvaluationService, BidEvaluationService>();
-builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+
 builder.Services.AddMediatR(cfg => 
-    cfg.RegisterServicesFromAssembly(typeof(RegisterUserCommand).Assembly));
-    // In Program.cs (or Infrastructure Dependency Injection extension)
-//builder.Services.AddScoped<IAuthService, IAuthService>();
-
-// 6. DbContext Registration
-builder.Services.AddDbContext<TmsDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("TenderMsDb") ?? throw new InvalidOperationException("Connection string 'TenderMsDb' not found."),
-        b => b.MigrationsAssembly(typeof(TmsDbContext).Assembly.FullName)));
-
-builder.Services.AddScoped<ITmsDbContext>(provider => provider.GetRequiredService<TmsDbContext>());
+    cfg.RegisterServicesFromAssembly(typeof(TmsApi.Application.Bids.Commands.SubmitBid.SubmitBidCommand).Assembly));
 
 var app = builder.Build();
 
+// 10. Middleware Pipeline Configuration
 app.UseExceptionHandler();
 
-// 7. Render Scalar API Reference in Development
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -115,22 +145,42 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("TmsClient");
 app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 11. Angular Anti-XSRF Token Cookie Injector Middleware
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true || context.Request.Cookies.ContainsKey("tms_auth"))
+    {
+        var antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>();
+        var tokens = antiforgery.GetAndStoreTokens(context);
+        
+        context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
+        {
+            HttpOnly = false, // Readable by Angular HttpClient Cookie Anti-XSRF Interceptor
+            Secure = !builder.Environment.IsDevelopment(),
+            SameSite = SameSiteMode.Strict
+        });
+    }
+    await next(context);
+});
+
 app.MapControllers();
+
+// 12. Automatic Database Seeding (Roles & System Administrator)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
-        var dbContext = services.GetRequiredService<TmsDbContext>();
-        await DbInitializer.SeedAsync(dbContext);
+        await DatabaseSeeder.SeedRolesAndAdminAsync(services);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
+        logger.LogError(ex, "An error occurred while seeding Identity roles and the admin user.");
     }
 }
 

@@ -26,9 +26,6 @@ public class SubmitBidEvaluationCommandHandler : IRequestHandler<SubmitBidEvalua
         if (criteriaExists is null)
             return Result<int>.Failure($"Evaluation criteria with ID {dto.CriteriaId} was not found.");
 
-        var evaluatorExists = await _context.Users.FindAsync(new object[] { dto.EvaluatorId }, cancellationToken);
-        if (evaluatorExists is null)
-            return Result<int>.Failure($"Evaluator with ID {dto.EvaluatorId} was not found.");
 
         try
         {

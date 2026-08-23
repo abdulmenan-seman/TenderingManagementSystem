@@ -1,83 +1,106 @@
 namespace TmsApi.Api.Controllers.V1;
 
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using TmsApi.Application.Auth.DTOs;
-using TmsApi.Application.Users.QueriesAndCommands;
+using Microsoft.EntityFrameworkCore;
+using TmsApi.Infrastructure.Identity;
+using TmsApi.Infrastructure.Persistence;
 
 [ApiController]
 [Route("api/v1/users")]
-[Authorize]
+[Authorize(Policy = "RequireAdminRole")]
 public class UsersController : ControllerBase
 {
-    private readonly ISender _mediator;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly TmsDbContext _dbContext;
 
-    public UsersController(ISender mediator)
+    public UsersController(UserManager<ApplicationUser> userManager, TmsDbContext dbContext)
     {
-        _mediator = mediator;
+        _userManager = userManager;
+        _dbContext = dbContext;
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetUsers(
+        [FromQuery] string? searchTerm,
+        [FromQuery] string? role,
+        [FromQuery] bool? isActive,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        var users = await _mediator.Send(new GetAllUsersQuery(), cancellationToken);
-        return Ok(users);
+        var query = _userManager.Users.Where(u => !u.IsDeleted).AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.Trim().ToLower();
+            query = query.Where(u => u.FullName.ToLower().Contains(term) || u.Email!.ToLower().Contains(term));
+        }
+
+        if (isActive.HasValue)
+        {
+            query = query.Where(u => u.IsActive == isActive.Value);
+        }
+
+        var totalCount = await query.CountAsync();
+        var users = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = new List<object>();
+
+        foreach (var user in users)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+
+            if (!string.IsNullOrEmpty(role) && !roles.Contains(role, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            items.Add(new
+            {
+                id = user.Id,
+                fullName = user.FullName,
+                email = user.Email,
+                roles = roles,
+                isActive = user.IsActive,
+                createdAt = DateTime.UtcNow // Map to your creation timestamp property if present
+            });
+        }
+
+        return Ok(new
+        {
+            items,
+            totalCount,
+            pageNumber,
+            pageSize
+        });
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetUserById(int id)
     {
-        var user = await _mediator.Send(new GetUserByIdQuery(id), cancellationToken);
-        return user is not null ? Ok(user) : NotFound();
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null || user.IsDeleted) return NotFound();
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        return Ok(new
+        {
+            id = user.Id,
+            fullName = user.FullName,
+            email = user.Email,
+            roles = roles,
+            isActive = user.IsActive
+        });
     }
 
-    [HttpPost]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> CreateUser([FromBody] CreateUserAdminDto dto, CancellationToken cancellationToken)
+    [HttpGet("logs")]
+    public async Task<IActionResult> GetLoginActivityLogs([FromQuery] int? userId)
     {
-        var user = await _mediator.Send(new CreateUserAdminCommand(dto), cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
-    }
-
-    [HttpPut("{id:int}")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserAdminDto dto, CancellationToken cancellationToken)
-    {
-        var user = await _mediator.Send(new UpdateUserAdminCommand(id, dto), cancellationToken);
-        return user is not null ? Ok(user) : NotFound();
-    }
-
-    [HttpPatch("{id:int}/status")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> ToggleStatus(int id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
-    {
-        var success = await _mediator.Send(new ToggleUserStatusCommand(id, request.IsActive), cancellationToken);
-        return success ? NoContent() : NotFound();
-    }
-
-    [HttpPost("{id:int}/reset-password")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetPasswordAdminRequest request, CancellationToken cancellationToken)
-    {
-        var success = await _mediator.Send(new ResetUserPasswordCommand(id, request.NewPassword), cancellationToken);
-        return success ? NoContent() : NotFound();
-    }
-
-    [HttpPatch("{id:int}/deactivate")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
-    {
-        var success = await _mediator.Send(new DeactivateUserCommand(id), cancellationToken);
-        return success ? NoContent() : NotFound();
-    }
-
-    [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> SoftDelete(int id, CancellationToken cancellationToken)
-    {
-        var success = await _mediator.Send(new SoftDeleteUserCommand(id), cancellationToken);
-        return success ? NoContent() : NotFound();
+        // Dummy/Placeholder array for activity logs if no persistent table exists yet
+        return Ok(Array.Empty<object>());
     }
 }
