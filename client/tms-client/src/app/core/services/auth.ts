@@ -133,9 +133,10 @@ registerAndSetupSupplier(
 
   logout(): void {
     const refreshToken = this.getRefreshToken();
+    const accessToken = this.getAccessToken();
 
     // Fire-and-forget token revocation request
-    if (refreshToken) {
+    if (refreshToken && accessToken) {
       this.http.post(`${this.apiUrl}/revoke`, { refreshToken }).subscribe({
         error: () => {} // Ignore errors on logout
       });

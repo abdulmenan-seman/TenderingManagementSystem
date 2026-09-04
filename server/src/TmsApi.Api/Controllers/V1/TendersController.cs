@@ -28,6 +28,7 @@ public class TendersController : ControllerBase
 
     /// <summary>Creates a new Draft tender. Officer ID is resolved from the JWT.</summary>
     [HttpPost]
+    [Authorize(Roles = "TenderOfficer,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateTenderRequestDto request, CancellationToken ct)
     {
         if (!int.TryParse(_currentUser.UserId, out var officerId))
@@ -75,6 +76,7 @@ public class TendersController : ControllerBase
 
     /// <summary>Updates a Draft tender's core fields.</summary>
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "TenderOfficer,Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateTenderRequestDto request, CancellationToken ct)
     {
         var result = await _mediator.Send(new UpdateTenderCommand(id, request), ct);
@@ -85,6 +87,7 @@ public class TendersController : ControllerBase
 
     /// <summary>Soft-deletes a Draft tender.</summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "TenderOfficer,Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var result = await _mediator.Send(new DeleteTenderCommand(id), ct);
@@ -95,6 +98,7 @@ public class TendersController : ControllerBase
 
     /// <summary>Publishes a Draft tender, making it visible to bidders.</summary>
     [HttpPost("{id:int}/publish")]
+    [Authorize(Roles = "TenderOfficer,Admin")]
     public async Task<IActionResult> Publish(int id, CancellationToken ct)
     {
         var result = await _mediator.Send(new PublishTenderCommand(id), ct);
@@ -108,11 +112,14 @@ public class TendersController : ControllerBase
     [RequestSizeLimit(20 * 1024 * 1024)] // 20 MB max per file
     public async Task<IActionResult> UploadDocument(
         int id,
-        IFormFile file,
+        [FromForm(Name = "file")] IFormFile? file,
         CancellationToken ct)
     {
         if (file is null || file.Length == 0)
             return BadRequest("No file was provided.");
+
+        if (file.Length > 20 * 1024 * 1024)
+            return BadRequest("The document cannot be larger than 20 MB.");
 
         await using var stream = file.OpenReadStream();
         using var memoryStream = new MemoryStream();
@@ -122,10 +129,30 @@ public class TendersController : ControllerBase
             id,
             file.FileName,
             memoryStream.ToArray(),
-            file.ContentType);
+            string.IsNullOrWhiteSpace(file.ContentType)
+                ? "application/octet-stream"
+                : file.ContentType);
         var result = await _mediator.Send(command, ct);
 
-        return result.IsSuccess ? Ok(result.Value) : BadRequest(result);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : BadRequest(new ProblemDetails { Detail = result.Error ?? "Document upload failed." });
+    }
+
+    [HttpPost("{id:int}/start-evaluation")]
+    [Authorize(Roles = "TenderOfficer,Admin")]
+    public async Task<IActionResult> StartEvaluation(int id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new StartTenderEvaluationCommand(id), ct);
+        return result.IsSuccess ? Ok() : BadRequest(result);
+    }
+
+    [HttpPost("{id:int}/close")]
+    [Authorize(Roles = "TenderOfficer,Admin")]
+    public async Task<IActionResult> Close(int id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new CloseTenderCommand(id), ct);
+        return result.IsSuccess ? Ok() : BadRequest(result);
     }
 
     [HttpGet("documents/{documentId:int}/download")]

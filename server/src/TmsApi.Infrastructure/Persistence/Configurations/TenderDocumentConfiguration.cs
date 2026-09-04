@@ -35,6 +35,7 @@ public class TenderDocumentConfiguration : IEntityTypeConfiguration<TenderDocume
         builder.ToTable("TenderDocuments");
         builder.HasKey(document => document.Id);
         builder.Property(document => document.FileName).IsRequired().HasMaxLength(255);
+        builder.Property(document => document.FilePath).HasMaxLength(500);
         builder.Property(document => document.Content).HasColumnType("bytea").IsRequired();
         builder.Property(document => document.ContentType).IsRequired().HasMaxLength(150);
 

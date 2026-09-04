@@ -42,9 +42,10 @@ public class UploadTenderDocumentCommandHandler : IRequestHandler<UploadTenderDo
 
             return Result<TenderDocumentDto>.Success(dto);
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is InvalidOperationException or DbUpdateException)
         {
-            return Result<TenderDocumentDto>.Failure(ex.Message);
+            return Result<TenderDocumentDto>.Failure(
+                ex is DbUpdateException ? "The document could not be saved to the database." : ex.Message);
         }
     }
 }

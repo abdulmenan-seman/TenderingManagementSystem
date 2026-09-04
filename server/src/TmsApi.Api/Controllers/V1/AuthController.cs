@@ -142,36 +142,36 @@ public class AuthController : ControllerBase
 [EndpointSummary("Rotate access and refresh tokens")]
 public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto request)
 {
-    var principal = _tokenService.GetPrincipalFromExpiredToken(request.AccessToken);
-    if (principal == null)
-        return BadRequest(new ProblemDetails { Detail = "Invalid access token structure." });
+    if (string.IsNullOrWhiteSpace(request.RefreshToken))
+        return BadRequest(new ProblemDetails { Detail = "Refresh token is required." });
 
-    // Fallback logic to check both claim formats
-    var userIdString = principal.FindFirstValue(ClaimTypes.NameIdentifier) 
-                    ?? principal.FindFirstValue("sub");
-
-    if (!int.TryParse(userIdString, out var userId))
-        return BadRequest(new ProblemDetails { Detail = "Invalid user token claims." });
-
-    var user = await _userManager.FindByIdAsync(userId.ToString());
+    // The access token is memory-only in the client and is unavailable after a hard refresh.
+    var user = await _userManager.Users
+        .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
 
     if (user == null || !user.IsActive || user.IsDeleted || 
-        user.RefreshToken != request.RefreshToken || 
         user.RefreshTokenExpiryTime <= DateTime.UtcNow)
     {
         return Unauthorized(new ProblemDetails { Detail = "Invalid or expired refresh token." });
     }
 
-    var newAccessToken = _tokenService.GenerateAccessToken(principal.Claims);
+    var roles = await _userManager.GetRolesAsync(user);
+    var primaryRole = roles.FirstOrDefault() ?? "Bidder";
+    var claims = new List<Claim>
+    {
+        new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new(ClaimTypes.Email, user.Email!),
+        new(ClaimTypes.Name, user.FullName),
+        new(ClaimTypes.Role, primaryRole)
+    };
+
+    var newAccessToken = _tokenService.GenerateAccessToken(claims);
     var newRefreshToken = _tokenService.GenerateRefreshToken();
 
     var expiryDays = double.Parse(_config["JwtSettings:RefreshTokenExpiryInDays"] ?? "7");
     user.RefreshToken = newRefreshToken;
     user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(expiryDays);
     await _userManager.UpdateAsync(user);
-
-    var roles = await _userManager.GetRolesAsync(user);
-    var primaryRole = roles.FirstOrDefault() ?? "Bidder";
 
     string? companyName = null;
     if (primaryRole == "Bidder")

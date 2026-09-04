@@ -74,6 +74,14 @@ public class Tender
         Status = TenderStatus.Closed;
     }
 
+    public void StartEvaluation()
+    {
+        if (Status != TenderStatus.Published)
+            throw new InvalidOperationException("Only published tenders can start evaluation.");
+
+        Status = TenderStatus.UnderEvaluation;
+    }
+
     public void AwardToBid(int bidId)
     {
         if (Status != TenderStatus.Closed && Status != TenderStatus.UnderEvaluation)

@@ -5,6 +5,7 @@ public class TenderDocument
     public int Id { get; private set; }
     public int TenderId { get; private set; }
     public string FileName { get; private set; } = default!;
+    public string? FilePath { get; private set; }
     public byte[] Content { get; private set; } = default!;
     public string ContentType { get; private set; } = "application/octet-stream";
     public DateTime UploadedAt { get; private set; } = DateTime.UtcNow;

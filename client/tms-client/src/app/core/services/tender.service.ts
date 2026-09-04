@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, tap, switchMap, forkJoin, of, catchError } from 'rxjs';
+import { Observable, tap, switchMap, forkJoin, of, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Tender,
@@ -112,7 +112,7 @@ export class TenderService {
             this.error.set(
               `Tender created, but its documents could not be uploaded: ${this.getServerError(err)}`
             );
-            return of(createdTender);
+            return throwError(() => err);
           })
         );
       }),
@@ -190,7 +190,8 @@ export class TenderService {
   }
 
   private getServerError(err: any, fallback = 'Failed to process request.'): string {
-    return err?.error?.error
+    return err?.error?.detail
+      || err?.error?.error
       || (err?.error?.errors ? (Object.values(err.error.errors) as any[])[0]?.[0] : null)
       || fallback;
   }

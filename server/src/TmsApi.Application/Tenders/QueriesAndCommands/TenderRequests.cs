@@ -13,6 +13,10 @@ public record GetTenderByIdQuery(int Id) : IRequest<Result<TenderResponseDto>>;
 // Command to publish a draft tender
 public record PublishTenderCommand(int Id) : IRequest<Result<bool>>;
 
+public record StartTenderEvaluationCommand(int Id) : IRequest<Result<bool>>;
+
+public record CloseTenderCommand(int Id) : IRequest<Result<bool>>;
+
 // Command to get paginated list of tenders
 public record GetTendersQuery(int PageNumber, int PageSize, string? Status) : IRequest<Result<PaginatedTendersDto>>;
 
