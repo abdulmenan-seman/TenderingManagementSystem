@@ -1,0 +1,221 @@
+<div class="p-6 max-w-7xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800">Tender Management</h1>
+      <p class="text-sm text-slate-500">Draft, publish, evaluate, and award procurement tenders.</p>
+    </div>
+    <button (click)="openCreateModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow transition-all flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Create New Tender
+    </button>
+  </div>
+
+  <!-- Filters & Controls Bar -->
+  <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+    <div class="flex items-center gap-3 w-full sm:w-auto">
+      <label class="text-sm font-medium text-slate-600">Filter Status:</label>
+      <select (change)="onFilterChange($event)" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">All Statuses</option>
+        <option [value]="TenderStatus.Draft">Draft</option>
+        <option [value]="TenderStatus.Published">Published</option>
+        <option [value]="TenderStatus.UnderEvaluation">Under Evaluation</option>
+        <option [value]="TenderStatus.Awarded">Awarded</option>
+        <option [value]="TenderStatus.Closed">Closed</option>
+      </select>
+    </div>
+    <div class="text-xs text-slate-500 font-medium">
+      Total Tenders: {{ tenderService.totalCount() }}
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-xs tracking-wider">
+          <tr>
+            <th class="py-3 px-4">Ref Number</th>
+            <th class="py-3 px-4">Title</th>
+            <th class="py-3 px-4">Budget</th>
+            <th class="py-3 px-4">Closing Date</th>
+            <th class="py-3 px-4">Status</th>
+            <th class="py-3 px-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <!-- Loading State -->
+          @if (tenderService.loading()) {
+            <tr>
+              <td colspan="6" class="py-8 text-center text-slate-400">Loading tenders...</td>
+            </tr>
+          } @else if (tenderService.tenders().length === 0) {
+            <tr>
+              <td colspan="6" class="py-8 text-center text-slate-400">No tenders found.</td>
+            </tr>
+          } @else {
+            @for (tender of tenderService.tenders(); track tender.id) {
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3.5 px-4 font-mono text-xs font-bold text-slate-700">{{ tender.referenceNumber }}</td>
+                <td class="py-3.5 px-4 font-medium text-slate-900 max-w-xs truncate">{{ tender.title }}</td>
+                <td class="py-3.5 px-4 text-slate-700 font-medium">{{ tender.estimatedBudget | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="py-3.5 px-4 text-slate-600">{{ tender.submissionDeadline | date:'mediumDate' }}</td>
+                <td class="py-3.5 px-4">
+                  <!-- Status Badges -->
+                  <span [ngClass]="{
+                    'bg-slate-100 text-slate-700': tender.status === TenderStatus.Draft,
+                    'bg-emerald-50 text-emerald-700 border-emerald-200': tender.status === TenderStatus.Published,
+                    'bg-amber-50 text-amber-700 border-amber-200': tender.status === TenderStatus.UnderEvaluation,
+                    'bg-purple-50 text-purple-700 border-purple-200': tender.status === TenderStatus.Awarded,
+                    'bg-red-50 text-red-700 border-red-200': tender.status === TenderStatus.Closed
+                  }" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                    {{ tender.status }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-right space-x-1">
+                  <!-- Workflow Actions -->
+                  @if (tender.status === TenderStatus.Draft) {
+                    <button (click)="publish(tender.id)" class="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium transition-colors">Publish</button>
+                    <button (click)="openEditModal(tender)" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-medium transition-colors">Edit</button>
+                    <button (click)="deleteTender(tender.id)" class="px-2.5 py-1 text-xs bg-red-50 hover:bg-red-100 text-red-600 rounded font-medium transition-colors">Delete</button>
+                  }
+                  @if (tender.status === TenderStatus.Published) {
+                    <button (click)="startEvaluation(tender.id)" class="px-2.5 py-1 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded font-medium transition-colors">Evaluate</button>
+                    <button (click)="closeTender(tender.id)" class="px-2.5 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded font-medium transition-colors">Close</button>
+                  }
+                  @if (tender.status === TenderStatus.UnderEvaluation) {
+                    <button (click)="openAwardModal(tender)" class="px-2.5 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition-colors">Award</button>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  @if (isFormModalOpen()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+          <h3 class="font-bold text-slate-800">{{ isEditing() ? 'Edit Tender' : 'Create New Tender' }}</h3>
+          <button (click)="closeFormModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
+        </div>
+        <div class="overflow-y-auto flex-1 p-6">
+          <form [formGroup]="tenderForm" (ngSubmit)="saveTender()" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Reference Number</label>
+              <input formControlName="referenceNumber" type="text" placeholder="e.g. TND-2026-001" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Title</label>
+              <input formControlName="title" type="text" placeholder="Tender title" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+              <textarea formControlName="description" rows="3" placeholder="Tender detailed requirements..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Estimated Budget ($)</label>
+                <input formControlName="estimatedBudget" type="number" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Closing Date</label>
+                <input formControlName="submissionDeadline" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            
+            <!-- Document Upload Area -->
+            <div class="pt-4 border-t border-slate-100">
+              <label class="block text-xs font-semibold text-slate-600 mb-2">Tender Documents</label>
+              
+              <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
+                <input type="file" multiple (change)="onFileSelected($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="mt-4 flex text-sm text-slate-600 justify-center">
+                  <span class="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                    Upload files
+                  </span>
+                  <p class="pl-1">or drag and drop</p>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">PDF, DOC, DOCX, XLS, XLSX up to 20MB</p>
+              </div>
+
+              <!-- Staged Files List -->
+              @if (stagedFiles().length > 0) {
+                <div class="mt-4 space-y-2">
+                  <h4 class="text-xs font-medium text-slate-700">Files to upload:</h4>
+                  <ul class="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+                    @for (file of stagedFiles(); track $index) {
+                      <li class="flex items-center justify-between py-2 px-3 bg-slate-50">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                          <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                          <span class="text-xs font-medium text-slate-700 truncate" [title]="file.name">{{ file.name }}</span>
+                          <span class="text-xs text-slate-400 shrink-0">({{ (file.size / 1024 / 1024) | number:'1.1-2' }} MB)</span>
+                        </div>
+                        <button type="button" (click)="removeFile($index)" class="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors shrink-0">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+
+            <!-- Error Display -->
+            @if (tenderService.error()) {
+              <div class="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
+                <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                  <h4 class="text-sm font-semibold text-red-800">Error</h4>
+                  <p class="text-xs text-red-600 mt-1">{{ tenderService.error() }}</p>
+                </div>
+              </div>
+            }
+
+            <div class="pt-4 flex justify-end gap-2 border-t border-slate-100 mt-6">
+              <button type="button" (click)="closeFormModal()" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">Cancel</button>
+              <button type="submit" [disabled]="tenderForm.invalid || tenderService.loading()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
+                @if (tenderService.loading()) {
+                  <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Saving...
+                } @else {
+                  Save Tender
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Award Tender Modal -->
+  @if (isAwardModalOpen()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-purple-50">
+          <h3 class="font-bold text-purple-900">Award Tender</h3>
+          <button (click)="closeAwardModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
+        </div>
+        <form [formGroup]="awardForm" (ngSubmit)="confirmAward()" class="p-6 space-y-4">
+          <p class="text-xs text-slate-600">Select the winning Bid ID calculated by evaluators for <strong>{{ selectedTenderForAward()?.title }}</strong>.</p>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Winning Bid ID</label>
+            <input formControlName="winningBidId" type="text" placeholder="UUID of Winning Bid" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          </div>
+          <div class="pt-4 flex justify-end gap-2">
+            <button type="button" (click)="closeAwardModal()" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">Cancel</button>
+            <button type="submit" [disabled]="awardForm.invalid" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50">Confirm Award</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

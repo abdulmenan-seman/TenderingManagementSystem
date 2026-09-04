@@ -6,32 +6,23 @@ public class Tender
     public string ReferenceNumber { get; private set; } = default!;
     public string Title { get; private set; } = default!;
     public string Description { get; private set; } = default!;
-    
-    // Financial primitive strictly using base-10 decimal
     public decimal EstimatedBudget { get; private set; } 
-    
     public DateTime PublicationDate { get; private set; }
     public DateTime SubmissionDeadline { get; private set; }
-    
     public TenderStatus Status { get; private set; }
     public int CreatedByOfficerId { get; private set; }
-    
-    // Explicitly optional winning bid link
     public int? WinningBidId { get; private set; } 
     public string? CancellationReason { get; private set; }
     public bool IsDeleted { get; private set; }
 
-    // Navigation properties
-
     public Bid? WinningBid { get; private set; }
-    
+
     private readonly List<TenderDocument> _documents = new();
     public IReadOnlyCollection<TenderDocument> Documents => _documents.AsReadOnly();
 
     private readonly List<EvaluationCriteria> _criteria = new();
     public IReadOnlyCollection<EvaluationCriteria> Criteria => _criteria.AsReadOnly();
 
-    // Required by ORM for reflection
     private Tender() { } 
 
     public Tender(
@@ -50,7 +41,7 @@ public class Tender
             throw new ArgumentOutOfRangeException(nameof(estimatedBudget), "Estimated budget cannot be negative.");
 
         if (submissionDeadline <= DateTime.UtcNow)
-            throw new ArgumentException("Deadline must be set in the future.", nameof(submissionDeadline));
+            throw new ArgumentException("Submission deadline must be set in the future.", nameof(submissionDeadline));
 
         ReferenceNumber = referenceNumber;
         Title = title;
@@ -60,6 +51,11 @@ public class Tender
         SubmissionDeadline = submissionDeadline;
         CreatedByOfficerId = createdByOfficerId;
         Status = TenderStatus.Draft;
+    }
+
+    public void AddDocument(string fileName, string filePath)
+    {
+        _documents.Add(new TenderDocument(Id, fileName, filePath));
     }
 
     public void Publish()
@@ -86,8 +82,44 @@ public class Tender
         WinningBidId = bidId;
         Status = TenderStatus.Awarded;
     }
+
+    public void Update(
+        string referenceNumber,
+        string title,
+        string description,
+        decimal estimatedBudget,
+        DateTime submissionDeadline)
+    {
+        if (Status != TenderStatus.Draft)
+            throw new InvalidOperationException("Only Draft tenders can be edited.");
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(referenceNumber);
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentException.ThrowIfNullOrWhiteSpace(description);
+
+        if (estimatedBudget < 0)
+            throw new ArgumentOutOfRangeException(nameof(estimatedBudget), "Estimated budget cannot be negative.");
+
+        if (submissionDeadline <= DateTime.UtcNow)
+            throw new ArgumentException("Submission deadline must be set in the future.", nameof(submissionDeadline));
+
+        ReferenceNumber = referenceNumber;
+        Title = title;
+        Description = description;
+        EstimatedBudget = estimatedBudget;
+        SubmissionDeadline = submissionDeadline;
+    }
+
+    public void SoftDelete()
+    {
+        if (Status != TenderStatus.Draft)
+            throw new InvalidOperationException("Only Draft tenders can be deleted.");
+
+        IsDeleted = true;
+    }
 }
 
+// Ensure this enum is present at the end of the file
 public enum TenderStatus
 {
     Draft = 1,

@@ -3,106 +3,111 @@ namespace TmsApi.Api.Controllers.V1;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TmsApi.Application.Common.Models;
+using TmsApi.Application.Common.Interfaces;
 using TmsApi.Application.Tenders.DTOs;
 using TmsApi.Application.Tenders.QueriesAndCommands;
-using TmsApi.Domain.Entities;
 
 [ApiController]
 [Route("api/v1/tenders")]
+[Authorize(Roles = "TenderOfficer,Admin")]
 public class TendersController : ControllerBase
 {
     private readonly ISender _mediator;
-    private readonly LinkGenerator _linkGenerator;
+    private readonly ICurrentUserService _currentUser;
 
-    public TendersController(ISender mediator, LinkGenerator linkGenerator)
+    public TendersController(ISender mediator, ICurrentUserService currentUser)
     {
         _mediator = mediator;
-        _linkGenerator = linkGenerator;
+        _currentUser = currentUser;
     }
 
+    // ─── CREATE ──────────────────────────────────────────────────────────────
+
+    /// <summary>Creates a new Draft tender. Officer ID is resolved from the JWT.</summary>
     [HttpPost]
-    [Authorize(Roles = "TenderOfficer,Admin")]
-    [EndpointSummary("Create a new tender draft")]
-    [ProducesResponseType(typeof(TenderResponseDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateTenderRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateTenderRequestDto request, CancellationToken ct)
     {
-        var result = await _mediator.Send(new CreateTenderCommand(request), cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        if (!int.TryParse(_currentUser.UserId, out var officerId))
+            return Unauthorized("Could not resolve the current user's ID from the token.");
+
+        var result = await _mediator.Send(new CreateTenderCommand(request, officerId), ct);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value?.Id }, result.Value)
+            : BadRequest(result);
     }
 
+    // ─── READ ────────────────────────────────────────────────────────────────
+
+    /// <summary>Returns a paginated list of tenders, optionally filtered by status.</summary>
     [HttpGet]
-    [EndpointSummary("Get paged and filtered list of tenders")]
-    [ProducesResponseType(typeof(PagedResponse<TenderResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
-        [FromQuery] TenderStatus? status,
-        [FromQuery] PaginationParams pagination,
-        CancellationToken cancellationToken)
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? status = null,
+        CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetPagedTendersQuery(status, pagination), cancellationToken);
-        return Ok(result);
+        var result = await _mediator.Send(new GetTendersQuery(pageNumber, pageSize, status), ct);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result);
     }
 
+    /// <summary>Returns full detail for a single tender by its integer ID.</summary>
     [HttpGet("{id:int}")]
-    [EndpointSummary("Get detailed tender by ID with hypermedia links")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var tender = await _mediator.Send(new GetTenderByIdQuery(id), cancellationToken);
-        if (tender is null) return NotFound();
-
-        // HATEOAS Links Generation
-        var links = new List<object>
-        {
-            new { rel = "self", method = "GET", href = _linkGenerator.GetPathByAction(HttpContext, nameof(GetById), values: new { id }) },
-            new { rel = "upload-document", method = "POST", href = $"/api/v1/tenders/{id}/documents" }
-        };
-
-        if (tender.Status == TenderStatus.Draft.ToString())
-        {
-            links.Add(new { rel = "publish", method = "PATCH", href = $"/api/v1/tenders/{id}/publish" });
-        }
-        else if (tender.Status == TenderStatus.Published.ToString())
-        {
-            links.Add(new { rel = "close", method = "PATCH", href = $"/api/v1/tenders/{id}/close" });
-            links.Add(new { rel = "submit-bid", method = "POST", href = $"/api/v1/tenders/{id}/bids" });
-        }
-
-        return Ok(new { data = tender, links });
+        var result = await _mediator.Send(new GetTenderByIdQuery(id), ct);
+        return result.IsSuccess ? Ok(result.Value) : NotFound(result);
     }
 
-    [HttpPatch("{id:int}/publish")]
-    [Authorize(Roles = "TenderOfficer,Admin")]
-    [EndpointSummary("Publish a draft tender")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Publish(int id, CancellationToken cancellationToken)
+    // ─── UPDATE ──────────────────────────────────────────────────────────────
+
+    /// <summary>Updates a Draft tender's core fields.</summary>
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] CreateTenderRequestDto request, CancellationToken ct)
     {
-        var success = await _mediator.Send(new PublishTenderCommand(id), cancellationToken);
-        return success ? NoContent() : BadRequest(new ProblemDetails { Detail = "Unable to publish tender. Ensure it exists and is currently in Draft status." });
+        var result = await _mediator.Send(new UpdateTenderCommand(id, request), ct);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result);
     }
 
-    [HttpPatch("{id:int}/close")]
-    [Authorize(Roles = "TenderOfficer,Admin")]
-    [EndpointSummary("Close a published tender")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Close(int id, CancellationToken cancellationToken)
+    // ─── DELETE ──────────────────────────────────────────────────────────────
+
+    /// <summary>Soft-deletes a Draft tender.</summary>
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var success = await _mediator.Send(new CloseTenderCommand(id), cancellationToken);
-        return success ? NoContent() : BadRequest(new ProblemDetails { Detail = "Unable to close tender. Ensure it exists and is currently Published." });
+        var result = await _mediator.Send(new DeleteTenderCommand(id), ct);
+        return result.IsSuccess ? NoContent() : BadRequest(result);
     }
 
-    [HttpPost("{id:int}/award")]
-    [Authorize(Roles = "TenderOfficer,Admin")]
-    [EndpointSummary("Award a tender to a specific winning bid")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Award(int id, [FromQuery] int bidId, CancellationToken cancellationToken)
+    // ─── WORKFLOW ACTIONS ────────────────────────────────────────────────────
+
+    /// <summary>Publishes a Draft tender, making it visible to bidders.</summary>
+    [HttpPost("{id:int}/publish")]
+    public async Task<IActionResult> Publish(int id, CancellationToken ct)
     {
-        var success = await _mediator.Send(new AwardTenderCommand(id, bidId), cancellationToken);
-        return success ? NoContent() : BadRequest(new ProblemDetails { Detail = "Unable to award tender. Check tender status or bid validity." });
+        var result = await _mediator.Send(new PublishTenderCommand(id), ct);
+        return result.IsSuccess ? Ok() : BadRequest(result);
+    }
+
+    // ─── DOCUMENT UPLOAD ─────────────────────────────────────────────────────
+
+    /// <summary>Uploads a document and attaches it to an existing tender.</summary>
+    [HttpPost("{id:int}/documents")]
+    [RequestSizeLimit(20 * 1024 * 1024)] // 20 MB max per file
+    public async Task<IActionResult> UploadDocument(
+        int id,
+        IFormFile file,
+        [FromServices] IFileStorageService fileStorage,
+        CancellationToken ct)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest("No file was provided.");
+
+        using var stream = file.OpenReadStream();
+        var savedFilePath = await fileStorage.SaveFileAsync(stream, file.FileName, "tenders", ct);
+
+        var command = new UploadTenderDocumentCommand(id, file.FileName, savedFilePath);
+        var result = await _mediator.Send(command, ct);
+
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result);
     }
 }

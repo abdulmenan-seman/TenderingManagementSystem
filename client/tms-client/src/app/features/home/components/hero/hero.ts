@@ -16,7 +16,7 @@ import { MatChipsModule } from '@angular/material/chips';
     MatChipsModule
   ],
   templateUrl: './hero.html',
-  styleUrls: ['./hero.scss']
+  styleUrl: './hero.scss'
 })
 export class HeroComponent {
   stats = [

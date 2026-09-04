@@ -5,20 +5,66 @@
   overflow: hidden;
 }
 
-/* Custom Scrollbar Styling for Main Viewport */
-main::-webkit-scrollbar {
-  width: 6px;
+/* --- Mobile Sidebar Transitions & Elevation --- */
+aside {
+  will-change: transform, width;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Mobile drawer overlay shadow */
+  @media (max-width: 1023px) {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height fix for mobile browsers */
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.3), 0 8px 10px -6px rgba(15, 23, 42, 0.3);
+  }
 }
 
-main::-webkit-scrollbar-track {
-  background: transparent;
+/* --- Navigation Custom Scrollbar --- */
+nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+  }
 }
 
-main::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
+/* --- Mobile Backdrop Fade Animation --- */
+.backdrop-fade {
+  animation: fadeIn 0.25s ease-out forwards;
 }
 
-main::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- Material Component Overrides --- */
+::ng-deep {
+  /* Profile dropdown menu positioning & border radius on mobile */
+  .mat-mdc-menu-panel {
+    border-radius: 1.25rem !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Adjust Angular Material icon sizing across mobile viewports */
+  @media (max-width: 639px) {
+    .mat-icon {
+      font-size: 22px !important;
+      width: 22px !important;
+      height: 22px !important;
+    }
+  }
 }

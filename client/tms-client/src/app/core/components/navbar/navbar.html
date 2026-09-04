@@ -16,7 +16,7 @@
     <a mat-button routerLink="/" routerLinkActive="!text-brand-green" [routerLinkActiveOptions]="{exact: true}" class="hover:!text-brand-navy">Home</a>
     <a mat-button routerLink="/" fragment="active-tenders" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">Active Tenders</a>
     <a mat-button routerLink="/solutions" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">Solutions</a>
-    <a mat-button routerLink="/about" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">About Us</a>
+    <a mat-button routerLink="/" fragment = "app-about" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">About Us</a>
     <a mat-button routerLink="/contact" routerLinkActive="!text-brand-green" class="hover:!text-brand-navy">Contact</a>
   </nav>
 
@@ -89,7 +89,7 @@
         <mat-icon class="!text-brand-green">widgets</mat-icon>
         <span class="text-brand-navy">Solutions</span>
       </button>
-      <button mat-menu-item routerLink="/about">
+      <button mat-menu-item routerLink="/" fragment="app-about">
         <mat-icon class="!text-brand-muted">info</mat-icon>
         <span class="text-brand-navy">About Us</span>
       </button>

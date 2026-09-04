@@ -1,0 +1,51 @@
+:host {
+  display: block;
+}
+
+/* Premium Animated Gradient Shift */
+.hero-section {
+  background: linear-gradient(
+    -45deg, 
+    #e0f2fe, 
+    #f0fdfa, 
+    #dbeafe, 
+    #ccfbf1, 
+    #e0f2fe
+  );
+  background-size: 400% 400%;
+  animation: heroGradientShift 14s ease-in-out infinite;
+  position: relative;
+}
+
+@keyframes heroGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Smooth Entrance Scroll Animations */
+.animate-hero-enter {
+  animation: heroEnter 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+
+@keyframes heroEnter {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

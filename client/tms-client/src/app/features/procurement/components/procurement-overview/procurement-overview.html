@@ -1,0 +1,64 @@
+<div class="p-6 max-w-7xl mx-auto space-y-6">
+  <div class="flex justify-between items-center">
+    <h1 class="text-2xl font-bold tracking-tight">Procurement Overview</h1>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="p-4 rounded-xl border bg-card shadow-sm">
+      <p class="text-sm font-medium text-muted-foreground">Total Requests</p>
+      <p class="text-2xl font-bold">{{ procurementService.items().length }}</p>
+    </div>
+    <div class="p-4 rounded-xl border bg-card shadow-sm">
+      <p class="text-sm font-medium text-muted-foreground">Pending Approval</p>
+      <p class="text-2xl font-bold text-amber-600">{{ procurementService.pendingCount() }}</p>
+    </div>
+    <div class="p-4 rounded-xl border bg-card shadow-sm">
+      <p class="text-sm font-medium text-muted-foreground">Total Committed Budget</p>
+      <p class="text-2xl font-bold text-emerald-600">{{ procurementService.totalBudget() | currency }}</p>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="border rounded-lg overflow-hidden">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted/50 border-b">
+        <tr>
+          <th class="p-3 font-semibold">ID</th>
+          <th class="p-3 font-semibold">Title</th>
+          <th class="p-3 font-semibold">Category</th>
+          <th class="p-3 font-semibold">Budget</th>
+          <th class="p-3 font-semibold">Status</th>
+          <th class="p-3 font-semibold">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (procurementService.isLoading()) {
+          <tr>
+            <td colspan="6" class="p-4 text-center">Loading procurements...</td>
+          </tr>
+        } @else {
+          @for (item of procurementService.items(); track item.id) {
+            <tr class="border-b hover:bg-muted/30">
+              <td class="p-3 font-mono font-medium">{{ item.id }}</td>
+              <td class="p-3">{{ item.title }}</td>
+              <td class="p-3">{{ item.category }}</td>
+              <td class="p-3">{{ item.budget | currency }}</td>
+              <td class="p-3">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold"
+                  [ngClass]="{
+                    'bg-amber-100 text-amber-800': item.status === 'Pending',
+                    'bg-emerald-100 text-emerald-800': item.status === 'Approved',
+                    'bg-rose-100 text-rose-800': item.status === 'Rejected'
+                  }">
+                  {{ item.status }}
+                </span>
+              </td>
+              <td class="p-3">{{ item.createdAt | date:'mediumDate' }}</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

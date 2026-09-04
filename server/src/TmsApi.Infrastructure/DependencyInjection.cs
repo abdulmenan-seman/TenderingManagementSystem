@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IDateTimeService, DateTimeService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddSingleton<ICacheService, MemoryCacheService>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         return services;
     }

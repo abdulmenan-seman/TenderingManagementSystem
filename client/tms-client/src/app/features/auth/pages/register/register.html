@@ -1,53 +1,55 @@
-<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-900/95 relative overflow-hidden">
+<div class="min-h-screen bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden">
   
-  <!-- Animated Background Orbs -->
-  <div class="absolute -top-32 -left-32 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl animate-pulse"></div>
-  <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+  <!-- Subtle Soft Mint Ambient Glows -->
+  <div class="absolute -top-24 -left-24 w-96 h-96 bg-emerald-200/40 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-teal-200/40 rounded-full blur-3xl pointer-events-none"></div>
 
-  <!-- Main Container Card -->
-  <div class="max-w-3xl w-full space-y-8 bg-slate-800/80 backdrop-blur-xl p-8 sm:p-10 rounded-3xl border border-slate-700/60 shadow-2xl shadow-teal-950/20 relative z-10">
+  <!-- Main Card Container -->
+  <div class="max-w-3xl w-full bg-white/90 backdrop-blur-md rounded-3xl p-8 sm:p-10 border border-emerald-100/80 shadow-xl shadow-slate-200/60 relative z-10 transition-all">
     
-    <!-- Header -->
-    <div class="text-center space-y-2">
-      <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-500 to-blue-500 text-slate-950 items-center justify-center shadow-lg shadow-teal-500/20 transition-transform duration-300 hover:scale-105">
+    <!-- Header Section matching Landing Page Brand -->
+    <div class="text-center space-y-3 mb-8">
+      <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white items-center justify-center shadow-lg shadow-emerald-500/20">
         <mat-icon class="!w-7 !h-7 !text-2xl">business</mat-icon>
       </div>
-      <h2 class="text-3xl font-extrabold text-slate-100 tracking-tight">Supplier Portal Registration</h2>
-      <p class="text-sm text-slate-400">
-        Create your bidder account and register your official corporate profile
-      </p>
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-[#1b4380] tracking-tight">Supplier Registration</h2>
+        <p class="text-xs sm:text-sm font-medium text-slate-500 mt-1">
+          Create your bidder account and register your official corporate profile
+        </p>
+      </div>
     </div>
 
-    <!-- Error Banner -->
+    <!-- Error Alert Box -->
     @if (errorMessage) {
-      <div class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-center gap-3 animate-fadeIn">
-        <mat-icon class="!text-red-400 !w-5 !h-5">error_outline</mat-icon>
-        <span>{{ errorMessage }}</span>
+      <div class="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-3 animate-fadeIn">
+        <mat-icon class="!text-red-500 !w-5 !h-5 shrink-0">error_outline</mat-icon>
+        <span class="leading-relaxed">{{ errorMessage }}</span>
       </div>
     }
 
-    <!-- Form -->
-    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="mt-6 space-y-6">
+    <!-- Reactive Register Form -->
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
       
       <!-- Section 1: User Account Information -->
       <div class="space-y-4">
-        <div class="border-b border-slate-700/80 pb-2 flex items-center gap-2">
-          <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-widest">Step 1: Account Information</h3>
+        <div class="border-b border-slate-200/80 pb-2 flex items-center gap-2">
+          <span class="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+          <h3 class="text-xs font-bold text-[#1b4380] uppercase tracking-widest">Step 1: Account Information</h3>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Contact Name</label>
-            <mat-form-field appearance="outline" class="w-full text-slate-100">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Contact Name</label>
+            <mat-form-field appearance="outline" class="w-full light-theme-field">
               <input matInput formControlName="fullName" placeholder="John Doe">
               <mat-icon matSuffix class="!text-slate-400">person_outline</mat-icon>
             </mat-form-field>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Email Address</label>
-            <mat-form-field appearance="outline" class="w-full text-slate-100">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Email Address</label>
+            <mat-form-field appearance="outline" class="w-full light-theme-field">
               <input matInput type="email" formControlName="email" placeholder="john@company.com">
               <mat-icon matSuffix class="!text-slate-400">mail_outline</mat-icon>
             </mat-form-field>
@@ -55,21 +57,21 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Password</label>
-            <mat-form-field appearance="outline" class="w-full text-slate-100">
-              <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password">
-              <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
+            <mat-form-field appearance="outline" class="w-full light-theme-field">
+              <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="••••••••">
+              <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button" aria-label="Toggle password visibility">
                 <mat-icon class="!text-slate-400">{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
             </mat-form-field>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Confirm Password</label>
-            <mat-form-field appearance="outline" class="w-full text-slate-100">
-              <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword">
-              <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Confirm Password</label>
+            <mat-form-field appearance="outline" class="w-full light-theme-field">
+              <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" placeholder="••••••••">
+              <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button" aria-label="Toggle confirm password visibility">
                 <mat-icon class="!text-slate-400">{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
             </mat-form-field>
@@ -77,29 +79,29 @@
         </div>
 
         @if (registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched) {
-          <p class="text-xs text-red-400 font-semibold -mt-2 animate-fadeIn">Passwords do not match.</p>
+          <p class="text-xs text-red-600 font-bold -mt-2 animate-fadeIn">Passwords do not match.</p>
         }
       </div>
 
       <!-- Section 2: Business & Profile Credentials -->
       <div class="space-y-4 pt-2">
-        <div class="border-b border-slate-700/80 pb-2 flex items-center gap-2">
-          <span class="flex h-2 w-2 rounded-full bg-teal-400"></span>
-          <h3 class="text-xs font-bold text-teal-400 uppercase tracking-widest">Step 2: Business Profile</h3>
+        <div class="border-b border-slate-200/80 pb-2 flex items-center gap-2">
+          <span class="flex h-2 w-2 rounded-full bg-teal-500"></span>
+          <h3 class="text-xs font-bold text-[#1b4380] uppercase tracking-widest">Step 2: Business Profile</h3>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Company Name</label>
-            <mat-form-field appearance="outline" class="w-full text-slate-100">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Company Name</label>
+            <mat-form-field appearance="outline" class="w-full light-theme-field">
               <input matInput formControlName="companyName" placeholder="Acme Enterprise Ltd">
               <mat-icon matSuffix class="!text-slate-400">domain</mat-icon>
             </mat-form-field>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Tax ID Number (TIN)</label>
-            <mat-form-field appearance="outline" class="w-full text-slate-100">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Tax ID Number (TIN)</label>
+            <mat-form-field appearance="outline" class="w-full light-theme-field">
               <input matInput formControlName="taxIdNumber" placeholder="TIN-00928123">
               <mat-icon matSuffix class="!text-slate-400">badge</mat-icon>
             </mat-form-field>
@@ -107,38 +109,38 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">License Number</label>
-            <mat-form-field appearance="outline" class="w-full text-slate-100">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">License Number</label>
+            <mat-form-field appearance="outline" class="w-full light-theme-field">
               <input matInput formControlName="businessLicenseNumber" placeholder="BL-2026-9921">
               <mat-icon matSuffix class="!text-slate-400">assignment</mat-icon>
             </mat-form-field>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Phone Number</label>
-            <mat-form-field appearance="outline" class="w-full text-slate-100">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Phone Number</label>
+            <mat-form-field appearance="outline" class="w-full light-theme-field">
               <input matInput formControlName="phoneNumber" placeholder="+251 911 234 567">
               <mat-icon matSuffix class="!text-slate-400">phone</mat-icon>
             </mat-form-field>
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Business Address</label>
-          <mat-form-field appearance="outline" class="w-full text-slate-100">
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Business Address</label>
+          <mat-form-field appearance="outline" class="w-full light-theme-field">
             <textarea matInput formControlName="address" rows="2" placeholder="Street, City, Country"></textarea>
             <mat-icon matSuffix class="!text-slate-400">place</mat-icon>
           </mat-form-field>
         </div>
       </div>
 
-      <!-- Submit Button -->
+      <!-- Primary Action Button -->
       <button 
         mat-flat-button 
         type="submit" 
         [disabled]="registerForm.invalid || isLoading"
-        class="w-full !bg-gradient-to-r !from-teal-500 !to-blue-500 hover:!from-teal-600 hover:!to-blue-600 !text-slate-950 !py-6 !rounded-2xl font-bold text-base shadow-lg shadow-teal-500/25 transition-all duration-300 hover:shadow-teal-500/40 active:scale-[0.99] disabled:!opacity-50 mt-4">
+        class="w-full !bg-emerald-600 hover:!bg-emerald-700 !text-white !py-6 !rounded-2xl font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all duration-200 active:scale-[0.99] disabled:!opacity-50 disabled:!bg-slate-300 mt-4">
         @if (isLoading) {
           <div class="flex items-center justify-center gap-2">
             <mat-spinner diameter="20" color="accent"></mat-spinner>
@@ -149,11 +151,11 @@
         }
       </button>
 
-      <!-- Footer Navigation Link -->
-      <div class="text-center pt-2">
-        <p class="text-sm text-slate-400">
+      <!-- Footer Action Links -->
+      <div class="text-center pt-4 border-t border-slate-100">
+        <p class="text-xs text-slate-500 font-medium">
           Already registered? 
-          <a routerLink="/auth/login" class="text-teal-400 font-semibold hover:text-teal-300 transition-colors duration-200 hover:underline ml-1">
+          <a routerLink="/auth/login" class="text-emerald-600 font-bold hover:text-emerald-700 transition-colors duration-200 hover:underline ml-1">
             Sign In Here
           </a>
         </p>

@@ -4,19 +4,26 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TmsApi.Domain.Entities;
 
-public class TenderDocumentConfiguration : IEntityTypeConfiguration<TenderDocument>
+public class TenderConfiguration : IEntityTypeConfiguration<Tender>
 {
-    public void Configure(EntityTypeBuilder<TenderDocument> builder)
+    public void Configure(EntityTypeBuilder<Tender> builder)
     {
-        builder.ToTable("TenderDocuments");
-        builder.HasKey(td => td.Id);
+        builder.ToTable("Tenders");
+        builder.HasKey(t => t.Id);
 
-        builder.Property(td => td.FileName).IsRequired().HasMaxLength(255);
-        builder.Property(td => td.FilePath).IsRequired().HasMaxLength(500);
+        builder.Property(t => t.ReferenceNumber).IsRequired().HasMaxLength(50);
+        builder.HasIndex(t => t.ReferenceNumber).IsUnique();
 
-        builder.HasOne(td => td.Tender)
-               .WithMany(t => t.Documents)
-               .HasForeignKey(td => td.TenderId)
-               .OnDelete(DeleteBehavior.Cascade);
+        builder.Property(t => t.Title).IsRequired().HasMaxLength(200);
+        builder.Property(t => t.Description).IsRequired().HasMaxLength(2000);
+        builder.Property(t => t.EstimatedBudget).HasPrecision(18, 2);
+
+        builder.Property(t => t.Status)
+               .HasConversion<int>()
+               .IsRequired();
+
+        // Configure backing field access for private read-only list
+        builder.Metadata.FindNavigation(nameof(Tender.Documents))!
+               .SetPropertyAccessMode(PropertyAccessMode.Field);
     }
 }

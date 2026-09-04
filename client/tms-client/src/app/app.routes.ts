@@ -54,8 +54,26 @@ export const routes: Routes = [
     path: 'dashboard/procurement',
     canActivate: [authGuard, roleGuard],
     data: { roles: ['TenderOfficer', 'Admin'] },
-    loadComponent: () => import('./features/dashboards/procurement-dashboard/procurement-dashboard').then(m => m.ProcurementDashboardComponent)
+    loadComponent: () => import('./features/dashboards/procurement-dashboard/procurement-dashboard').then(m => m.ProcurementDashboardComponent),
+    children: [
+      {
+        path: '',
+        redirectTo: 'overview',
+        pathMatch: 'full'
+      },
+      {
+        path: 'overview',
+        title: 'Procurement Overview',
+        loadComponent: () => import('./features/procurement/components/procurement-overview/procurement-overview').then(m => m.ProcurementOverviewComponent)
+      },
+      {
+        path: 'tenders',
+        title: 'Tender Management',
+        loadComponent: () => import('./features/tender/components/tender-management/tender-management').then(m => m.TenderManagementComponent)
+      }
+    ]
   },
+
   // 4. Evaluator Dashboard
   {
     path: 'dashboard/evaluator',

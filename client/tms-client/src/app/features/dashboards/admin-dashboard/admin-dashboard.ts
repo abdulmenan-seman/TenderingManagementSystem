@@ -1,11 +1,17 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router'; // <-- Added RouterOutlet & RouterLinkActive
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../../core/services/auth';
+
+interface NavItem {
+  label: string;
+  icon: string;
+  route: string;
+}
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -13,8 +19,8 @@ import { AuthService } from '../../../core/services/auth';
   imports: [
     CommonModule,
     RouterLink,
-    RouterLinkActive, // <-- Added
-    RouterOutlet,     // <-- Added
+    RouterLinkActive,
+    RouterOutlet,
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
@@ -30,7 +36,7 @@ export class AdminDashboardComponent {
   isCollapsed = signal<boolean>(false);
   isMobileOpen = signal<boolean>(false);
 
-  navItems = [
+  navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard/admin' },
     { label: 'Tenders', icon: 'gavel', route: '/dashboard/admin/tenders' },
     { label: 'Bids', icon: 'visibility', route: '/dashboard/admin/bids' },

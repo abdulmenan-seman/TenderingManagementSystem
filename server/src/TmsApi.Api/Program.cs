@@ -95,6 +95,15 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueLimit = 0;
     });
 });
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        // Enforce OpenAPI 3.0 specification for UI component compatibility
+        document.Info.Version = "v1";
+        return Task.CompletedTask;
+    });
+});
 
 // 8. CORS Policy Configuration
 var allowedOrigins = builder.Configuration
@@ -118,7 +127,7 @@ builder.Services.AddInfrastructureServices();
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBidService, BidService>();
-builder.Services.AddScoped<ITenderService, TenderService>();
+//builder.Services.AddScoped<ITenderService, TenderService>();
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 builder.Services.AddScoped<IBidEvaluationService, BidEvaluationService>();
 
@@ -127,6 +136,7 @@ builder.Services.AddMediatR(cfg =>
 
 var app = builder.Build();
 
+
 // 10. Middleware Pipeline Configuration
 app.UseExceptionHandler();
 
@@ -134,11 +144,16 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference(options =>
-    {
-        options.WithTitle("Tendering Management System API")
-               .WithTheme(ScalarTheme.Moon)
-               .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-    });
+{
+    options
+        .WithTitle("Tendering Management System API")
+        .WithTheme(ScalarTheme.Purple)
+        .WithPreferredScheme("Bearer")
+        .WithHttpBearerAuthentication(bearer =>
+        {
+            bearer.Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIzIiwiZW1haWwiOiJhbGVtQGdtYWlsLmNvbSIsInVuaXF1ZV9uYW1lIjoiQWxlbSBUZWtlbHUiLCJyb2xlIjoiVGVuZGVyT2ZmaWNlciIsIm5iZiI6MTc4NzczMzQzNSwiZXhwIjoxNzg3NzM0MzM1LCJpYXQiOjE3ODc3MzM0MzUsImlzcyI6IlRtc0FwaSIsImF1ZCI6IlRtc0NsaWVudCJ9.J9MVTIsvjt2sCKeP25rK5n8lZtAd-UCG6_si8yU1PVY";
+        });
+});
 }
 
 app.UseHttpsRedirection();
