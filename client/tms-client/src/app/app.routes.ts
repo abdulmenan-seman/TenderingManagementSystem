@@ -54,6 +54,16 @@ export const routes: Routes = [
         title: 'Available Tenders',
         loadComponent: () => import('./features/bidder/Tenders/tenders.component').then(m => m.TendersComponent)
       },
+      {
+        path: 'bids/new',
+        title: 'Submit Bid',
+        loadComponent: () => import('./features/bidder/bids/new-bid.component').then(m => m.NewBidComponent)
+      },
+      {
+        path: 'my-bids',
+        title: 'My Bids',
+        loadComponent: () => import('./features/bidder/bids/my-bids.component').then(m => m.MyBidsComponent)
+      },
     ]
     
   },

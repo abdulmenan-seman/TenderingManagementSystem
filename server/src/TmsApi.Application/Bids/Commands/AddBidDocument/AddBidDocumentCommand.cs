@@ -33,7 +33,8 @@ public class AddBidDocumentCommandHandler : IRequestHandler<AddBidDocumentComman
                 dto.BidId,
                 dto.DocumentType,
                 dto.FileName,
-                dto.FilePath
+                dto.Content,
+                dto.ContentType
             );
 
             _context.BidDocuments.Add(document);

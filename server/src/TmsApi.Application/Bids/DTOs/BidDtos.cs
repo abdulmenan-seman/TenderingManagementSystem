@@ -12,7 +12,9 @@ public record AddBidDocumentRequestDto(
     int BidId,
     string DocumentType, // e.g., TechnicalProposal, ComplianceCert, FinancialBreakdown
     string FileName,
-    string FilePath
+    string? FilePath,
+    byte[] Content,
+    string ContentType
 );
 
 // Response DTO: Output structure when retrieving bid details

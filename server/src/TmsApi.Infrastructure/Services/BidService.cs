@@ -61,7 +61,7 @@ public class BidService : IBidService
         }
 
         // 2. Instantiate BidDocument via domain constructor
-        var document = new BidDocument(dto.BidId, dto.DocumentType, dto.FileName, dto.FilePath);
+        var document = new BidDocument(dto.BidId, dto.DocumentType, dto.FileName, Array.Empty<byte>(), "application/octet-stream");
 
         _context.BidDocuments.Add(document);
         await _context.SaveChangesAsync(cancellationToken);
@@ -133,7 +133,7 @@ public class BidService : IBidService
             doc.Id,
             doc.DocumentType,
             doc.FileName,
-            doc.FilePath,
+            $"/api/v1/bids/documents/{doc.Id}/download",
             doc.UploadedAt
         );
     }

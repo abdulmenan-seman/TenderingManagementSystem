@@ -7,7 +7,7 @@ using TmsApi.Application.Common.Interfaces;
 using TmsApi.Application.Common.Models;
 using TmsApi.Domain.Entities;
 
-public record SubmitBidCommand(SubmitBidRequestDto BidDto) : IRequest<Result<int>>;
+public record SubmitBidCommand(int SupplierId, SubmitBidRequestDto BidDto) : IRequest<Result<int>>;
 
 public class SubmitBidCommandHandler : IRequestHandler<SubmitBidCommand, Result<int>>
 {
@@ -23,13 +23,15 @@ public class SubmitBidCommandHandler : IRequestHandler<SubmitBidCommand, Result<
         var dto = request.BidDto;
 
         // Verify Tender exists
-        var tender = await _context.Tenders.FindAsync(new object[] { dto.TenderId }, cancellationToken);
+        var tender = await _context.Tenders.FirstOrDefaultAsync(t => t.Id == dto.TenderId && !t.IsDeleted, cancellationToken);
         if (tender is null)
         {
             return Result<int>.Failure($"Tender with ID {dto.TenderId} was not found.");
         }
 
-        // Business Rule: Cannot submit bids after submission deadline
+        if (tender.Status != TenderStatus.Published)
+            return Result<int>.Failure("Bids can only be submitted for published tenders.");
+
         if (DateTime.UtcNow > tender.SubmissionDeadline)
         {
             return Result<int>.Failure("The submission deadline for this tender has passed.");
@@ -41,7 +43,7 @@ public class SubmitBidCommandHandler : IRequestHandler<SubmitBidCommand, Result<
         {
             var bid = new Bid(
                 dto.TenderId,
-                dto.SupplierId,
+                request.SupplierId,
                 dto.FinancialProposalAmount
             );
 

@@ -35,7 +35,7 @@ public class GetBidsByTenderIdQueryHandler : IRequestHandler<GetBidsByTenderIdQu
                         bd.Id,
                         bd.DocumentType,
                         bd.FileName,
-                        bd.FilePath,
+                        $"/api/v1/bids/documents/{bd.Id}/download",
                         bd.UploadedAt
                     ))
                     .ToList()

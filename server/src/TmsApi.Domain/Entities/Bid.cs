@@ -41,6 +41,14 @@ public class Bid
     {
         Status = newStatus;
     }
+
+    public void Withdraw()
+    {
+        if (Status != BidStatus.Submitted)
+            throw new InvalidOperationException("Only submitted bids can be withdrawn.");
+
+        IsDeleted = true;
+    }
 }
 
 public enum BidStatus
