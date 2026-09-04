@@ -37,22 +37,17 @@ public class CreateTenderCommandHandler : IRequestHandler<CreateTenderCommand, R
                 request.OfficerId
             );
 
-            // 3. Attach Initial Documents if included
-            if (dto.InitialDocuments != null)
-            {
-                foreach (var doc in dto.InitialDocuments)
-                {
-                    tender.AddDocument(doc.FileName, doc.FilePath);
-                }
-            }
-
-            // 4. Save Aggregate Root to Database
+            // 3. Save Aggregate Root to Database
             _context.Tenders.Add(tender);
             await _context.SaveChangesAsync(cancellationToken);
 
-            // 5. Build DTO Response
+            // 4. Build DTO Response
             var documentDtos = tender.Documents
-                .Select(d => new TenderDocumentDto(d.Id, d.FileName, d.FilePath, d.UploadedAt))
+                .Select(d => new TenderDocumentDto(
+                    d.Id,
+                    d.FileName,
+                    $"/api/v1/tenders/documents/{d.Id}/download",
+                    d.UploadedAt))
                 .ToList();
 
             var response = new TenderResponseDto(

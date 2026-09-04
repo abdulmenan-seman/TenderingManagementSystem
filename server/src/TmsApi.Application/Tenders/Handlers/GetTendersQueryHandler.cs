@@ -43,7 +43,11 @@ public class GetTendersQueryHandler : IRequestHandler<GetTendersQuery, Result<Pa
             t.SubmissionDeadline,
             t.Status.ToString(),
             t.CreatedByOfficerId,
-            t.Documents.Select(d => new TenderDocumentDto(d.Id, d.FileName, d.FilePath, d.UploadedAt)).ToList()
+            t.Documents.Select(d => new TenderDocumentDto(
+                d.Id,
+                d.FileName,
+                $"/api/v1/tenders/documents/{d.Id}/download",
+                d.UploadedAt)).ToList()
         )).ToList();
 
         var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);

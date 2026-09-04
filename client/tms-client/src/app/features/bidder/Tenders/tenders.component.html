@@ -1,0 +1,162 @@
+<div class="space-y-6">
+  <!-- Top Bar & Controls -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+    <div>
+      <h2 class="text-xl font-bold text-slate-800">Available Tenders</h2>
+      <p class="text-xs text-slate-500 font-medium mt-0.5">Browse active public procurement opportunities</p>
+    </div>
+
+    <!-- Actions & Pagination Metadata -->
+    <div class="flex items-center gap-3">
+      <button 
+        mat-icon-button 
+        (click)="loadPublishedTenders()" 
+        [disabled]="tenderService.loading()"
+        matTooltip="Refresh list"
+        class="!text-slate-600 hover:!bg-slate-100">
+        <mat-icon [class.animate-spin]="tenderService.loading()">refresh</mat-icon>
+      </button>
+
+      <span class="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full border border-blue-100">
+        Total Published: {{ tenderService.totalCount() }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (tenderService.loading()) {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 animate-pulse space-y-4">
+          <div class="h-4 bg-slate-200 rounded w-1/3"></div>
+          <div class="h-6 bg-slate-200 rounded w-3/4"></div>
+          <div class="h-12 bg-slate-100 rounded w-full"></div>
+          <div class="h-8 bg-slate-200 rounded w-1/2"></div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Error Message -->
+  @if (tenderService.error()) {
+    <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center gap-3">
+      <mat-icon class="text-red-500">error</mat-icon>
+      <span>{{ tenderService.error() }}</span>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!tenderService.loading() && tenderService.tenders().length === 0) {
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-md mx-auto my-8">
+      <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+        <mat-icon class="!w-8 !h-8 !text-3xl">folder_off</mat-icon>
+      </div>
+      <h3 class="text-base font-bold text-slate-800">No Published Tenders</h3>
+      <p class="text-xs text-slate-500 mt-1">There are currently no active tenders open for bidding.</p>
+    </div>
+  }
+
+  <!-- Tender Cards Grid -->
+  @if (!tenderService.loading() && tenderService.tenders().length > 0) {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (tender of tenderService.tenders(); track tender.id) {
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between overflow-hidden">
+          
+          <div class="p-6 space-y-4">
+            <!-- Header Badge & Ref Number -->
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                {{ tender.referenceNumber }}
+              </span>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                Published
+              </span>
+            </div>
+
+            <!-- Title & Description -->
+            <div>
+              <h3 class="text-base font-bold text-slate-800 line-clamp-1 hover:line-clamp-none" [title]="tender.title">
+                {{ tender.title }}
+              </h3>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-3 leading-relaxed">
+                {{ tender.description }}
+              </p>
+            </div>
+
+            <!-- Key Specs (Budget & Deadline) -->
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <span class="block text-[10px] font-semibold uppercase text-slate-400">Budget</span>
+                <span class="text-xs font-bold text-slate-700">{{ tender.estimatedBudget | currency:'USD':'symbol':'1.0-0' }}</span>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <span class="block text-[10px] font-semibold uppercase text-slate-400">Deadline</span>
+                <span class="text-xs font-bold text-slate-700">{{ tender.submissionDeadline | date:'mediumDate' }}</span>
+              </div>
+            </div>
+
+            <!-- Attached Documents List -->
+            <div class="pt-2">
+              <span class="text-xs font-bold text-slate-600 block mb-2">
+                Attached Documents ({{ tender.documents?.length || 0 }})
+              </span>
+
+              @if (tender.documents && tender.documents.length > 0) {
+                <div class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                  @for (doc of tender.documents; track doc.id) {
+                    <a
+                      href="#"
+                      (click)="downloadDocument($event, doc.filePath, doc.fileName)"
+                      class="flex items-center justify-between p-2 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200/60 hover:border-blue-200 text-xs text-slate-700 hover:text-blue-700 transition-colors group">
+                      <div class="flex items-center gap-2 truncate">
+                        <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-blue-600">description</mat-icon>
+                        <span class="truncate font-medium">{{ doc.fileName }}</span>
+                      </div>
+                      <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-blue-600 shrink-0">download</mat-icon>
+                    </a>
+                  }
+                </div>
+              } @else {
+                <p class="text-xs italic text-slate-400">No documents attached.</p>
+              }
+            </div>
+          </div>
+
+          <!-- Card Footer Actions -->
+          <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-[11px] font-medium text-slate-400">
+              Published {{ tender.publicationDate | date:'shortDate' }}
+            </span>
+            <button 
+              mat-flat-button 
+              [routerLink]="['/dashboard/bidder/bids/new']" 
+              [queryParams]="{ tenderId: tender.id }"
+              class="!bg-[#1b4380] !text-white !rounded-xl !px-4 !py-1.5 !text-xs font-semibold hover:!bg-blue-900">
+              Submit Bid
+            </button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+    <!-- Pagination controls -->
+    <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm mt-6">
+      <button 
+        mat-button 
+        [disabled]="pageNumber() === 1" 
+        (click)="changePage(pageNumber() - 1)"
+        class="!rounded-xl">
+        Previous
+      </button>
+      <span class="text-xs font-semibold text-slate-600">Page {{ pageNumber() }}</span>
+      <button 
+        mat-button 
+        [disabled]="(pageNumber() * pageSize()) >= tenderService.totalCount()" 
+        (click)="changePage(pageNumber() + 1)"
+        class="!rounded-xl">
+        Next
+      </button>
+    </div>
+  }
+</div>

@@ -27,3 +27,20 @@ public class TenderConfiguration : IEntityTypeConfiguration<Tender>
                .SetPropertyAccessMode(PropertyAccessMode.Field);
     }
 }
+
+public class TenderDocumentConfiguration : IEntityTypeConfiguration<TenderDocument>
+{
+    public void Configure(EntityTypeBuilder<TenderDocument> builder)
+    {
+        builder.ToTable("TenderDocuments");
+        builder.HasKey(document => document.Id);
+        builder.Property(document => document.FileName).IsRequired().HasMaxLength(255);
+        builder.Property(document => document.Content).HasColumnType("bytea").IsRequired();
+        builder.Property(document => document.ContentType).IsRequired().HasMaxLength(150);
+
+        builder.HasOne(document => document.Tender)
+            .WithMany(tender => tender.Documents)
+            .HasForeignKey(document => document.TenderId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}

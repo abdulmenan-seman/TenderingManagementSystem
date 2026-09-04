@@ -3,22 +3,25 @@ namespace TmsApi.Api.Controllers.V1;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TmsApi.Application.Common.Interfaces;
 using TmsApi.Application.Tenders.DTOs;
 using TmsApi.Application.Tenders.QueriesAndCommands;
 
 [ApiController]
 [Route("api/v1/tenders")]
-[Authorize(Roles = "TenderOfficer,Admin")]
+[Authorize]
 public class TendersController : ControllerBase
 {
     private readonly ISender _mediator;
     private readonly ICurrentUserService _currentUser;
+    private readonly ITmsDbContext _context;
 
-    public TendersController(ISender mediator, ICurrentUserService currentUser)
+    public TendersController(ISender mediator, ICurrentUserService currentUser, ITmsDbContext context)
     {
         _mediator = mediator;
         _currentUser = currentUser;
+        _context = context;
     }
 
     // ─── CREATE ──────────────────────────────────────────────────────────────
@@ -40,21 +43,31 @@ public class TendersController : ControllerBase
 
     /// <summary>Returns a paginated list of tenders, optionally filtered by status.</summary>
     [HttpGet]
+    [Authorize(Roles = "TenderOfficer,Admin,Bidder")]
     public async Task<IActionResult> GetAll(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? status = null,
         CancellationToken ct = default)
     {
+        // Bidders may only browse published tenders, regardless of the query string.
+        if (User.IsInRole("Bidder"))
+            status = "Published";
+
         var result = await _mediator.Send(new GetTendersQuery(pageNumber, pageSize, status), ct);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result);
     }
 
     /// <summary>Returns full detail for a single tender by its integer ID.</summary>
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "TenderOfficer,Admin,Bidder")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var result = await _mediator.Send(new GetTenderByIdQuery(id), ct);
+
+        if (result.IsSuccess && User.IsInRole("Bidder") && result.Value?.Status != "Published")
+            return NotFound();
+
         return result.IsSuccess ? Ok(result.Value) : NotFound(result);
     }
 
@@ -96,18 +109,40 @@ public class TendersController : ControllerBase
     public async Task<IActionResult> UploadDocument(
         int id,
         IFormFile file,
-        [FromServices] IFileStorageService fileStorage,
         CancellationToken ct)
     {
         if (file is null || file.Length == 0)
             return BadRequest("No file was provided.");
 
-        using var stream = file.OpenReadStream();
-        var savedFilePath = await fileStorage.SaveFileAsync(stream, file.FileName, "tenders", ct);
+        await using var stream = file.OpenReadStream();
+        using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream, ct);
 
-        var command = new UploadTenderDocumentCommand(id, file.FileName, savedFilePath);
+        var command = new UploadTenderDocumentCommand(
+            id,
+            file.FileName,
+            memoryStream.ToArray(),
+            file.ContentType);
         var result = await _mediator.Send(command, ct);
 
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result);
+    }
+
+    [HttpGet("documents/{documentId:int}/download")]
+    [Authorize(Roles = "TenderOfficer,Admin,Bidder")]
+    public async Task<IActionResult> DownloadDocument(int documentId, CancellationToken ct)
+    {
+        var document = await _context.TenderDocuments
+            .Include(d => d.Tender)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Id == documentId && !d.Tender.IsDeleted, ct);
+
+        if (document is null)
+            return NotFound();
+
+        if (User.IsInRole("Bidder") && document.Tender.Status != TmsApi.Domain.Entities.TenderStatus.Published)
+            return NotFound();
+
+        return File(document.Content, document.ContentType, document.FileName);
     }
 }

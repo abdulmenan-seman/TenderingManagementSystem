@@ -44,7 +44,11 @@ public class UpdateTenderCommandHandler : IRequestHandler<UpdateTenderCommand, R
             await _context.SaveChangesAsync(cancellationToken);
 
             var documentDtos = tender.Documents
-                .Select(d => new TenderDocumentDto(d.Id, d.FileName, d.FilePath, d.UploadedAt))
+                .Select(d => new TenderDocumentDto(
+                    d.Id,
+                    d.FileName,
+                    $"/api/v1/tenders/documents/{d.Id}/download",
+                    d.UploadedAt))
                 .ToList();
 
             return Result<TenderResponseDto>.Success(new TenderResponseDto(

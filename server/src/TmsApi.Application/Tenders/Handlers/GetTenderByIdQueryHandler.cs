@@ -25,7 +25,11 @@ public class GetTenderByIdQueryHandler : IRequestHandler<GetTenderByIdQuery, Res
             return Result<TenderResponseDto>.Failure($"Tender with ID {request.Id} was not found.");
 
         var documentDtos = tender.Documents
-            .Select(d => new TenderDocumentDto(d.Id, d.FileName, d.FilePath, d.UploadedAt))
+            .Select(d => new TenderDocumentDto(
+                d.Id,
+                d.FileName,
+                $"/api/v1/tenders/documents/{d.Id}/download",
+                d.UploadedAt))
             .ToList();
 
         var response = new TenderResponseDto(

@@ -46,7 +46,16 @@ export const routes: Routes = [
     path: 'dashboard/bidder',
     canActivate: [authGuard, roleGuard],
     data: { roles: ['Bidder'] },
-    loadComponent: () => import('./features/dashboards/bidder-dashboard/bidder-dashboard').then(m => m.BidderDashboardComponent)
+    loadComponent: () => import('./features/dashboards/bidder-dashboard/bidder-dashboard').then(m => m.BidderDashboardComponent),
+    // Child routes for bidder dashboard are defined within the BidderDashboardComponent using RouterOutlet
+    children: [
+      {
+        path: 'tenders',
+        title: 'Available Tenders',
+        loadComponent: () => import('./features/bidder/Tenders/tenders.component').then(m => m.TendersComponent)
+      },
+    ]
+    
   },
 
   // 3. Procurement / Tender Officer Dashboard

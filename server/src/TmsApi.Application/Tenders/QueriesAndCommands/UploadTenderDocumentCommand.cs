@@ -7,5 +7,6 @@ using TmsApi.Application.Tenders.DTOs;
 public record UploadTenderDocumentCommand(
     int TenderId, 
     string FileName, 
-    string FilePath
+    byte[] Content,
+    string ContentType
 ) : IRequest<Result<TenderDocumentDto>>;

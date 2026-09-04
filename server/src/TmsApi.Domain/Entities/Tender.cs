@@ -53,9 +53,9 @@ public class Tender
         Status = TenderStatus.Draft;
     }
 
-    public void AddDocument(string fileName, string filePath)
+    public void AddDocument(string fileName, byte[] content, string contentType)
     {
-        _documents.Add(new TenderDocument(Id, fileName, filePath));
+        _documents.Add(new TenderDocument(Id, fileName, content, contentType));
     }
 
     public void Publish()

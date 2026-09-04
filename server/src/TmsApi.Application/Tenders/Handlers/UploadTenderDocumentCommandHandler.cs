@@ -26,7 +26,7 @@ public class UploadTenderDocumentCommandHandler : IRequestHandler<UploadTenderDo
         try
         {
             // Use domain method to add the document entity
-            tender.AddDocument(request.FileName, request.FilePath);
+            tender.AddDocument(request.FileName, request.Content, request.ContentType);
             
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -36,7 +36,7 @@ public class UploadTenderDocumentCommandHandler : IRequestHandler<UploadTenderDo
             var dto = new TenderDocumentDto(
                 createdDocument.Id,
                 createdDocument.FileName,
-                createdDocument.FilePath,
+                $"/api/v1/tenders/documents/{createdDocument.Id}/download",
                 createdDocument.UploadedAt
             );
 

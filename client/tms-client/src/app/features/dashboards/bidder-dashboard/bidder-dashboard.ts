@@ -1,26 +1,17 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router, RouterLinkActive } from '@angular/router';
+import { RouterLink, Router, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../../core/services/auth';
 
-
-interface DashboardCard {
-  title: string;
-  subtitle: string;
-  icon: string;
-  bgGradient: string;
-  iconColor: string;
-  route: string;
-}
-
 interface NavItem {
   label: string;
   icon: string;
   route: string;
+  exact?: boolean;
 }
 
 @Component({
@@ -30,6 +21,7 @@ interface NavItem {
     CommonModule, 
     RouterLink, 
     RouterLinkActive,
+    RouterOutlet,
     MatIconModule, 
     MatButtonModule, 
     MatMenuModule, 
@@ -39,75 +31,25 @@ interface NavItem {
   styleUrl: './bidder-dashboard.scss'
 })
 export class BidderDashboardComponent {
-  private router = inject(Router);
   private authService = inject(AuthService);
 
   isSidebarCollapsed = signal<boolean>(false);
 
+  // Relative navigation routes for child outlets
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: 'home', route: '/dashboard/bidder' },
-    { label: 'Tenders', icon: 'article', route: '/tenders' },
-    { label: 'My Bids', icon: 'view_list', route: '/my-bids' },
-    { label: 'Bids', icon: 'add_circle', route: '/bids/new' },
-    { label: 'Results', icon: 'info', route: '/results' },
-    { label: 'Support', icon: 'settings', route: '/support' }
-  ];
-
-  dashboardCards: DashboardCard[] = [
-    {
-      title: 'My Profile',
-      subtitle: 'Manage Account Info',
-      icon: 'contact_mail',
-      bgGradient: 'bg-sky-100',
-      iconColor: 'text-blue-600',
-      route: '/profile'
-    },
-    {
-      title: 'Active Tenders',
-      subtitle: 'Browse & Apply for Tenders',
-      icon: 'find_in_page',
-      bgGradient: 'bg-blue-100',
-      iconColor: 'text-blue-700',
-      route: '/tenders'
-    },
-    {
-      title: 'My Bids',
-      subtitle: 'View & Track Submissions',
-      icon: 'fact_check',
-      bgGradient: 'bg-slate-100',
-      iconColor: 'text-blue-800',
-      route: '/my-bids'
-    },
-    {
-      title: 'Alerts & Messages',
-      subtitle: 'Tender Updates & Notices',
-      icon: 'mark_email_unread',
-      bgGradient: 'bg-amber-100',
-      iconColor: 'text-amber-600',
-      route: '/messages'
-    },
-    {
-      title: 'Bid Status',
-      subtitle: 'Check Bid Progress',
-      icon: 'assignment_turned_in',
-      bgGradient: 'bg-emerald-100',
-      iconColor: 'text-emerald-700',
-      route: '/status'
-    },
-    {
-      title: 'Results & History',
-      subtitle: 'View Awards & Reports',
-      icon: 'emoji_events',
-      bgGradient: 'bg-yellow-100',
-      iconColor: 'text-amber-500',
-      route: '/results'
-    }
+    { label: 'Overview', icon: 'home', route: '/dashboard/bidder', exact: true },
+    { label: 'Tenders', icon: 'article', route: '/dashboard/bidder/tenders' },
+    { label: 'My Bids', icon: 'view_list', route: '/dashboard/bidder/my-bids' },
+    { label: 'New Bid', icon: 'add_circle', route: '/dashboard/bidder/bids/new' },
+    { label: 'Results', icon: 'emoji_events', route: '/dashboard/bidder/results' },
+    { label: 'Support', icon: 'headset_mic', route: '/dashboard/bidder/support' }
   ];
 
   toggleSidebar(): void {
     this.isSidebarCollapsed.update(val => !val);
   }
-logout(): void {
+
+  logout(): void {
     this.authService.logout();
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, tap, switchMap, forkJoin, of } from 'rxjs';
+import { Observable, tap, switchMap, forkJoin, of, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Tender,
@@ -107,7 +107,13 @@ export class TenderService {
               ...uploadedDocs
             ];
           }),
-          switchMap(() => of(createdTender))
+          switchMap(() => of(createdTender)),
+          catchError((err) => {
+            this.error.set(
+              `Tender created, but its documents could not be uploaded: ${this.getServerError(err)}`
+            );
+            return of(createdTender);
+          })
         );
       }),
       tap({
@@ -118,8 +124,7 @@ export class TenderService {
         },
         error: (err) => {
           this.loading.set(false);
-          const serverError = err?.error?.error || (err?.error?.errors ? (Object.values(err.error.errors) as any[])[0]?.[0] : null) || 'Failed to create tender.';
-          this.error.set(serverError);
+          this.error.set(this.getServerError(err, 'Failed to create tender.'));
         }
       })
     );
@@ -159,6 +164,35 @@ export class TenderService {
     const formData = new FormData();
     formData.append('file', file, file.name);
     return this.http.post<TenderDocument>(`${this.apiUrl}/${tenderId}/documents`, formData);
+  }
+
+  downloadTenderDocument(filePath: string, fileName: string): void {
+    this.http.get(this.toApiUrl(filePath), { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err) => this.error.set(this.getServerError(err, 'Failed to download document.'))
+    });
+  }
+
+  private toApiUrl(path: string): string {
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const apiUrl = environment.apiUrl?.replace(/\/$/, '') || 'http://localhost:5293/api/v1';
+    if (path.startsWith('/api/')) {
+      return `${apiUrl.replace(/\/api\/v1$/, '')}${path}`;
+    }
+    return `${apiUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  }
+
+  private getServerError(err: any, fallback = 'Failed to process request.'): string {
+    return err?.error?.error
+      || (err?.error?.errors ? (Object.values(err.error.errors) as any[])[0]?.[0] : null)
+      || fallback;
   }
 
   // ─── WORKFLOW ACTIONS ─────────────────────────────────────────────────────
