@@ -21,6 +21,12 @@ public class EvaluationCriteriaController : ControllerBase
     [Authorize(Roles = "TenderOfficer,Admin")]
     public async Task<IActionResult> Create([FromBody] AddEvaluationCriteriaRequestDto dto, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(dto.CriteriaName))
+            return BadRequest(new ProblemDetails { Detail = "Criterion name is required." });
+
+        if (string.IsNullOrWhiteSpace(dto.Description))
+            return BadRequest(new ProblemDetails { Detail = "Criterion description is required." });
+
         var result = await _mediator.Send(new AddEvaluationCriteriaCommand(dto), cancellationToken);
 
         if (!result.IsSuccess)
@@ -30,6 +36,7 @@ public class EvaluationCriteriaController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "TenderOfficer,Evaluator,Admin")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetCriteriaByIdQuery(id), cancellationToken);
@@ -41,6 +48,7 @@ public class EvaluationCriteriaController : ControllerBase
     }
 
     [HttpGet("tender/{tenderId:int}")]
+    [Authorize(Roles = "TenderOfficer,Evaluator,Admin")]
     public async Task<IActionResult> GetByTenderId(int tenderId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetCriteriaByTenderIdQuery(tenderId), cancellationToken);

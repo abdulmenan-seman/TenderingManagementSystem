@@ -6,7 +6,7 @@ using TmsApi.Application.Common.Models;
 using TmsApi.Application.Evaluations.DTOs;
 using TmsApi.Domain.Entities;
 
-public record SubmitBidEvaluationCommand(SubmitBidEvaluationRequestDto EvaluationDto) : IRequest<Result<int>>;
+public record SubmitBidEvaluationCommand(int EvaluatorId, SubmitBidEvaluationRequestDto EvaluationDto) : IRequest<Result<int>>;
 
 public class SubmitBidEvaluationCommandHandler : IRequestHandler<SubmitBidEvaluationCommand, Result<int>>
 {
@@ -26,12 +26,15 @@ public class SubmitBidEvaluationCommandHandler : IRequestHandler<SubmitBidEvalua
         if (criteriaExists is null)
             return Result<int>.Failure($"Evaluation criteria with ID {dto.CriteriaId} was not found.");
 
+        if (dto.Score > criteriaExists.MaxScore)
+            return Result<int>.Failure($"Score cannot exceed the maximum of {criteriaExists.MaxScore}.");
+
 
         try
         {
             var evaluation = new BidEvaluation(
                 dto.BidId,
-                dto.EvaluatorId,
+                request.EvaluatorId,
                 dto.CriteriaId,
                 dto.Score,
                 dto.Remarks

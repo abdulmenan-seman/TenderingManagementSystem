@@ -25,9 +25,17 @@ export class TenderManagementComponent implements OnInit {
   // Modal Signals
   isFormModalOpen = signal<boolean>(false);
   isAwardModalOpen = signal<boolean>(false);
+  isAssignmentModalOpen = signal<boolean>(false);
+  isCriteriaModalOpen = signal<boolean>(false);
   isEditing = signal<boolean>(false);
   editingTenderId = signal<number | null>(null);
   selectedTenderForAward = signal<Tender | null>(null);
+  selectedTenderForAssignment = signal<Tender | null>(null);
+  evaluators = signal<{ id: number; fullName: string; email: string }[]>([]);
+  criteria = signal<{ id: number; criteriaName: string; description: string; weightPercentage: number; maxScore: number }[]>([]);
+  selectedEvaluatorId = signal<number | null>(null);
+  selectedTenderForCriteria = signal<Tender | null>(null);
+  criteriaForm!: FormGroup;
   
   // File Staging
   stagedFiles = signal<File[]>([]);
@@ -52,6 +60,13 @@ export class TenderManagementComponent implements OnInit {
 
     this.awardForm = this.fb.group({
       winningBidId: ['', [Validators.required]]
+    });
+
+    this.criteriaForm = this.fb.group({
+      criteriaName: ['', [Validators.required]],
+      description: ['', [Validators.required]],
+      weightPercentage: [0, [Validators.required, Validators.min(0.01), Validators.max(100)]],
+      maxScore: [100, [Validators.required, Validators.min(0.01)]]
     });
   }
 
@@ -104,6 +119,92 @@ export class TenderManagementComponent implements OnInit {
   closeAwardModal(): void {
     this.isAwardModalOpen.set(false);
     this.selectedTenderForAward.set(null);
+  }
+
+  openAssignmentModal(tender: Tender): void {
+    this.selectedTenderForAssignment.set(tender);
+    this.selectedEvaluatorId.set(null);
+    this.criteria.set([]);
+    this.isAssignmentModalOpen.set(true);
+    this.tenderService.getEvaluators().subscribe(result => this.evaluators.set(result));
+    this.tenderService.getTenderCriteria(tender.id).subscribe(result => this.criteria.set(result));
+  }
+
+  closeAssignmentModal(): void {
+    this.isAssignmentModalOpen.set(false);
+    this.selectedTenderForAssignment.set(null);
+  }
+
+  assignEvaluator(): void {
+    const tender = this.selectedTenderForAssignment();
+    const evaluatorId = this.selectedEvaluatorId();
+    if (!tender || !evaluatorId) return;
+    this.tenderService.assignEvaluator(tender.id, evaluatorId).subscribe({
+      next: () => this.closeAssignmentModal()
+    });
+  }
+
+  openCriteriaModal(tender: Tender): void {
+    this.tenderService.error.set(null);
+    this.selectedTenderForCriteria.set(tender);
+    this.tenderService.getTenderCriteria(tender.id).subscribe(criteria => {
+      this.criteria.set(criteria);
+    });
+    this.criteriaForm.reset({
+      criteriaName: '',
+      description: '',
+      weightPercentage: 0,
+      maxScore: 100
+    });
+    this.isCriteriaModalOpen.set(true);
+  }
+
+  closeCriteriaModal(): void {
+    this.isCriteriaModalOpen.set(false);
+    this.selectedTenderForCriteria.set(null);
+  }
+
+  createCriteria(): void {
+    const tender = this.selectedTenderForCriteria();
+    if (!tender) return;
+    if (this.criteriaForm.invalid) {
+      this.criteriaForm.markAllAsTouched();
+      return;
+    }
+
+    const formValue = this.criteriaForm.getRawValue();
+    const criteriaName = String(formValue.criteriaName ?? '').trim();
+    const description = String(formValue.description ?? '').trim();
+    const weightPercentage = Number(formValue.weightPercentage);
+    const maxScore = Number(formValue.maxScore);
+    if (!criteriaName || !description) {
+      this.tenderService.error.set('Criterion name and description are required.');
+      return;
+    }
+    if (weightPercentage > this.remainingCriteriaWeight()) {
+      this.tenderService.error.set(
+        `The criterion weight cannot exceed the remaining ${this.remainingCriteriaWeight()}%.`
+      );
+      return;
+    }
+
+    this.tenderService.createEvaluationCriteria({
+      tenderId: tender.id,
+      criteriaName: criteriaName || '',
+      description: description || '',
+      weightPercentage,
+      maxScore
+    }).subscribe({
+      next: () => {
+        this.tenderService.getTenderCriteria(tender.id).subscribe(criteria => this.criteria.set(criteria));
+        this.closeCriteriaModal();
+      },
+      error: () => undefined
+    });
+  }
+
+  remainingCriteriaWeight(): number {
+    return Math.max(0, 100 - this.criteria().reduce((total, criterion) => total + criterion.weightPercentage, 0));
   }
 
   // --- File Handling ---

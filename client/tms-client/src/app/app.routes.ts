@@ -1,6 +1,13 @@
 import { Routes } from '@angular/router';
 import { roleGuard, authGuard, guestGuard } from './core/guards/auth-guard';
 import { UserManagementComponent } from './features/admin/components/user-management/user-management';
+import { AssignedTendersComponent } from './features/evaluator/assigned-tenders/assigned-tenders.component';
+import { BidEvaluationComponent } from './features/evaluator/bid-evaluation/bid-evaluation.component';
+import { 
+  EvaluatorReportsComponent, 
+  EvaluatorNotificationsComponent, 
+  EvaluatorComplianceComponent 
+} from './features/evaluator/evaluator-modules/evaluator-modules.component';
 
 export const routes: Routes = [
   // Home route
@@ -98,6 +105,14 @@ export const routes: Routes = [
     path: 'dashboard/evaluator',
     canActivate: [authGuard, roleGuard],
     data: { roles: ['Evaluator', 'Admin'] },
-    loadComponent: () => import('./features/dashboards/evaluation-dashboard/evaluation-dashboard').then(m => m.EvaluationDashboardComponent)
+    loadComponent: () => import('./features/dashboards/evaluation-dashboard/evaluation-dashboard').then(m => m.EvaluationDashboardComponent),
+    children: [
+      // 
+      { path: 'assigned-tenders', component: AssignedTendersComponent },
+      { path: 'bid-evaluation', component: BidEvaluationComponent },
+      { path: 'reports', component: EvaluatorReportsComponent },
+      { path: 'notifications', component: EvaluatorNotificationsComponent },
+      { path: 'compliance', component: EvaluatorComplianceComponent }
+    ]
   }
 ];

@@ -3,6 +3,7 @@ namespace TmsApi.Api.Controllers.V1;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TmsApi.Application.Evaluations.Commands.FinalizeTenderResult;
 using TmsApi.Application.Evaluations.Commands.SubmitBidEvaluation;
 using TmsApi.Application.Evaluations.DTOs;
@@ -20,7 +21,10 @@ public class BidEvaluationsController : ControllerBase
     [HttpPost("score")]
     public async Task<IActionResult> SubmitEvaluation([FromBody] SubmitBidEvaluationRequestDto dto, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new SubmitBidEvaluationCommand(dto), cancellationToken);
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var evaluatorId))
+            return Unauthorized();
+
+        var result = await _mediator.Send(new SubmitBidEvaluationCommand(evaluatorId, dto), cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ProblemDetails { Detail = result.Error });

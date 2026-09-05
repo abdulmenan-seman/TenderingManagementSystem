@@ -4,6 +4,9 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using TmsApi.Infrastructure.Identity;
+using System.Security.Claims;
 using TmsApi.Application.Common.Interfaces;
 using TmsApi.Application.Tenders.DTOs;
 using TmsApi.Application.Tenders.QueriesAndCommands;
@@ -16,12 +19,14 @@ public class TendersController : ControllerBase
     private readonly ISender _mediator;
     private readonly ICurrentUserService _currentUser;
     private readonly ITmsDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public TendersController(ISender mediator, ICurrentUserService currentUser, ITmsDbContext context)
+    public TendersController(ISender mediator, ICurrentUserService currentUser, ITmsDbContext context, UserManager<ApplicationUser> userManager)
     {
         _mediator = mediator;
         _currentUser = currentUser;
         _context = context;
+        _userManager = userManager;
     }
 
     // ─── CREATE ──────────────────────────────────────────────────────────────
@@ -44,7 +49,7 @@ public class TendersController : ControllerBase
 
     /// <summary>Returns a paginated list of tenders, optionally filtered by status.</summary>
     [HttpGet]
-    [Authorize(Roles = "TenderOfficer,Admin,Bidder")]
+    [Authorize(Roles = "TenderOfficer,Admin,Bidder,Evaluator")]
     public async Task<IActionResult> GetAll(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
@@ -70,6 +75,67 @@ public class TendersController : ControllerBase
             return NotFound();
 
         return result.IsSuccess ? Ok(result.Value) : NotFound(result);
+    }
+
+    [HttpGet("evaluators")]
+    [Authorize(Roles = "TenderOfficer,Admin")]
+    public async Task<IActionResult> GetEvaluators(CancellationToken ct)
+    {
+        var evaluators = await _userManager.GetUsersInRoleAsync("Evaluator");
+        return Ok(evaluators.Where(user => user.IsActive && !user.IsDeleted)
+            .Select(user => new { id = user.Id, fullName = user.FullName, email = user.Email }));
+    }
+
+    [HttpGet("{id:int}/evaluation-criteria")]
+    [Authorize(Roles = "TenderOfficer,Admin,Evaluator")]
+    public async Task<IActionResult> GetTenderCriteria(int id, CancellationToken ct)
+    {
+        var criteria = await _context.EvaluationCriteria.AsNoTracking()
+            .Where(criteria => criteria.TenderId == id)
+            .Select(criteria => new { criteria.Id, criteria.CriteriaName, criteria.Description, criteria.WeightPercentage, criteria.MaxScore })
+            .ToListAsync(ct);
+        return Ok(criteria);
+    }
+
+    [HttpPost("{id:int}/evaluators/{evaluatorId:int}")]
+    [Authorize(Roles = "TenderOfficer,Admin")]
+    public async Task<IActionResult> AssignEvaluator(int id, int evaluatorId, CancellationToken ct)
+    {
+        var evaluator = await _userManager.FindByIdAsync(evaluatorId.ToString());
+        if (evaluator is null || !await _userManager.IsInRoleAsync(evaluator, "Evaluator"))
+            return BadRequest(new ProblemDetails { Detail = "The selected user is not an evaluator." });
+
+        var tenderExists = await _context.Tenders.AnyAsync(tender => tender.Id == id && !tender.IsDeleted, ct);
+        if (!tenderExists) return NotFound();
+
+        var alreadyAssigned = await _context.TenderEvaluatorAssignments
+            .AnyAsync(assignment => assignment.TenderId == id && assignment.EvaluatorId == evaluatorId, ct);
+        if (!alreadyAssigned)
+        {
+            _context.TenderEvaluatorAssignments.Add(new TmsApi.Domain.Entities.TenderEvaluatorAssignment(id, evaluatorId));
+            await _context.SaveChangesAsync(ct);
+        }
+        return Ok(new { message = "Evaluator assigned successfully." });
+    }
+
+    [HttpGet("assigned-to-me")]
+    [Authorize(Roles = "Evaluator")]
+    public async Task<IActionResult> GetAssignedToMe(CancellationToken ct)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var evaluatorId))
+            return Unauthorized();
+
+        var tenderIds = _context.TenderEvaluatorAssignments
+            .Where(assignment => assignment.EvaluatorId == evaluatorId)
+            .Select(assignment => assignment.TenderId);
+
+        var tenders = await _context.Tenders.AsNoTracking()
+            .Where(tender => tenderIds.Contains(tender.Id) && !tender.IsDeleted)
+            .OrderByDescending(tender => tender.Id)
+            .Select(tender => new { tender.Id, tender.Title, Status = tender.Status.ToString() })
+            .ToListAsync(ct);
+
+        return Ok(tenders);
     }
 
     // ─── UPDATE ──────────────────────────────────────────────────────────────

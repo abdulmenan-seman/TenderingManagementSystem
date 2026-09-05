@@ -3,8 +3,8 @@ namespace TmsApi.Application.Criteria.DTOs;
 // Incoming request payload from frontend/client
 public record AddEvaluationCriteriaRequestDto(
     int TenderId,
-    string CriteriaName,
-    string Description,
+    string? CriteriaName,
+    string? Description,
     decimal WeightPercentage,
     decimal MaxScore
 );

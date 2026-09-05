@@ -12,6 +12,7 @@ namespace TmsApi.Infrastructure.Persistence
 
         public DbSet<BidderProfile> BidderProfiles => Set<BidderProfile>();
         public DbSet<Tender> Tenders => Set<Tender>();
+        public DbSet<TenderEvaluatorAssignment> TenderEvaluatorAssignments => Set<TenderEvaluatorAssignment>();
         public DbSet<TenderDocument> TenderDocuments => Set<TenderDocument>();
         public DbSet<EvaluationCriteria> EvaluationCriteria => Set<EvaluationCriteria>();
         public DbSet<Bid> Bids => Set<Bid>();

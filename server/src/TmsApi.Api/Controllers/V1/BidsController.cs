@@ -128,7 +128,7 @@ public class BidsController : ControllerBase
     }
 
     [HttpGet("tender/{tenderId:int}")]
-    [Authorize(Roles = "TenderOfficer,Admin")]
+    [Authorize(Roles = "TenderOfficer,Evaluator,Admin")]
     public async Task<IActionResult> GetByTenderId(int tenderId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetBidsByTenderIdQuery(tenderId), cancellationToken);

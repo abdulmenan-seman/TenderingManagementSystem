@@ -24,6 +24,12 @@ public class EvaluationCriteriaService : IEvaluationCriteriaService
             throw new KeyNotFoundException($"Tender with ID {dto.TenderId} was not found.");
         }
 
+        if (string.IsNullOrWhiteSpace(dto.CriteriaName))
+            throw new ArgumentException("Criterion name is required.", nameof(dto.CriteriaName));
+
+        if (string.IsNullOrWhiteSpace(dto.Description))
+            throw new ArgumentException("Criterion description is required.", nameof(dto.Description));
+
         // Ensure total weight percentage for this tender does not exceed 100%
         var currentTotalWeight = await _context.EvaluationCriteria
             .Where(c => c.TenderId == dto.TenderId)

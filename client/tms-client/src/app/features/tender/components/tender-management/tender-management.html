@@ -75,12 +75,14 @@
                 <td class="py-3.5 px-4 text-right space-x-1">
                   <!-- Workflow Actions -->
                   @if (tender.status === TenderStatus.Draft) {
-                    <button (click)="publish(tender.id)" class="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium transition-colors">Publish</button>
+                    <button type="button" (click)="publish(tender.id)" class="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium transition-colors">Publish</button>
                     <button (click)="openEditModal(tender)" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-medium transition-colors">Edit</button>
                     <button (click)="deleteTender(tender.id)" class="px-2.5 py-1 text-xs bg-red-50 hover:bg-red-100 text-red-600 rounded font-medium transition-colors">Delete</button>
                   }
                   @if (tender.status === TenderStatus.Published) {
+                    <button type="button" (click)="openCriteriaModal(tender)" class="px-2.5 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium transition-colors">Add criteria</button>
                     <button (click)="startEvaluation(tender.id)" class="px-2.5 py-1 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded font-medium transition-colors">Evaluate</button>
+                    <button (click)="openAssignmentModal(tender)" class="px-2.5 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors">Assign evaluator</button>
                     <button (click)="closeTender(tender.id)" class="px-2.5 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded font-medium transition-colors">Close</button>
                   }
                   @if (tender.status === TenderStatus.UnderEvaluation) {
@@ -214,6 +216,44 @@
             <button type="button" (click)="closeAwardModal()" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">Cancel</button>
             <button type="submit" [disabled]="awardForm.invalid" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50">Confirm Award</button>
           </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (isAssignmentModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+      <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-100 bg-blue-50 px-6 py-4">
+          <div><h3 class="font-bold text-blue-900">Assign evaluator</h3><p class="text-xs text-blue-700">{{ selectedTenderForAssignment()?.title }}</p></div>
+          <button type="button" (click)="closeAssignmentModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
+        </div>
+        <div class="space-y-5 p-6">
+          <div>
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Evaluator</label>
+            <select [value]="selectedEvaluatorId() ?? ''" (change)="selectedEvaluatorId.set(+$any($event.target).value)" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <option value="">Select an evaluator</option>
+              @for (evaluator of evaluators(); track evaluator.id) { <option [value]="evaluator.id">{{ evaluator.fullName }} ({{ evaluator.email }})</option> }
+            </select>
+          </div>
+          <div><h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Evaluation criteria</h4><div class="mt-2 space-y-2">@for (criterion of criteria(); track criterion.id) { <div class="rounded-lg bg-slate-50 p-3"><div class="flex justify-between gap-3"><span class="text-sm font-semibold text-slate-700">{{ criterion.criteriaName }}</span><span class="text-xs font-bold text-blue-700">{{ criterion.weightPercentage }}%</span></div><p class="mt-1 text-xs text-slate-500">{{ criterion.description }} · Max {{ criterion.maxScore }}</p></div> } @empty { <p class="text-xs text-slate-400">No criteria defined yet.</p> }</div></div>
+          <div class="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" (click)="closeAssignmentModal()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600">Cancel</button><button type="button" (click)="assignEvaluator()" [disabled]="!selectedEvaluatorId()" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Assign evaluator</button></div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isCriteriaModalOpen()) {
+    <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm pointer-events-auto">
+      <div class="pointer-events-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-xl" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between border-b border-slate-100 bg-indigo-50 px-6 py-4"><div><h3 class="font-bold text-indigo-900">Add evaluation criterion</h3><p class="text-xs text-indigo-700">{{ selectedTenderForCriteria()?.title }}</p></div><button type="button" (click)="closeCriteriaModal()" class="text-slate-400">&times;</button></div>
+        <form [formGroup]="criteriaForm" (ngSubmit)="createCriteria()" class="space-y-4 p-6">
+          @if (tenderService.error()) { <p class="rounded-lg bg-red-50 p-3 text-xs text-red-700">{{ tenderService.error() }}</p> }
+          <p class="text-xs text-slate-500">Remaining criteria weight: <strong>{{ remainingCriteriaWeight() }}%</strong></p>
+          <label class="block text-xs font-semibold text-slate-600">Criterion name<input formControlName="criteriaName" type="text" placeholder="Criterion name" class="mt-1 w-full bg-white rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900" /></label>
+          <label class="block text-xs font-semibold text-slate-600">Description<textarea formControlName="description" rows="3" placeholder="Describe how this criterion is evaluated" class="mt-1 w-full bg-white rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"></textarea></label>
+          <div class="grid grid-cols-2 gap-3"><label class="text-xs font-semibold text-slate-600">Weight %<input formControlName="weightPercentage" type="number" min="0.01" max="100" step="0.01" placeholder="Weight %" class="mt-1 w-full bg-white rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900" /></label><label class="text-xs font-semibold text-slate-600">Maximum score<input formControlName="maxScore" type="number" min="0.01" step="0.01" placeholder="Maximum score" class="mt-1 w-full bg-white rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900" /></label></div>
+          <div class="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" (click)="closeCriteriaModal()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600">Cancel</button><button type="submit" [disabled]="criteriaForm.invalid" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Create criterion</button></div>
         </form>
       </div>
     </div>

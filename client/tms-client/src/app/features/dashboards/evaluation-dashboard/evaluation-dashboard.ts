@@ -1,6 +1,6 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router, RouterLinkActive } from '@angular/router';
+import { RouterLink, Router, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
@@ -29,6 +29,7 @@ interface NavItem {
     CommonModule, 
     RouterLink, 
     RouterLinkActive,
+    RouterOutlet,
     MatIconModule, 
     MatButtonModule, 
     MatMenuModule, 
@@ -38,22 +39,21 @@ interface NavItem {
   styleUrl: './evaluation-dashboard.scss'
 })
 export class EvaluationDashboardComponent {
-  private router = inject(Router);
+  public router = inject(Router);
   private authService = inject(AuthService);
 
   isSidebarCollapsed = signal<boolean>(false);
 
-  // Evaluator Specific Navigation Items
+  // Evaluator Specific Navigation Items mapped to real sub-routes
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'home', route: '/dashboard/evaluator' },
-    { label: 'Assigned Tenders', icon: 'folder_open', route: '/evaluator/assigned-tenders' },
-    { label: 'Bid Evaluation', icon: 'fact_check', route: '/evaluator/bid-evaluation' },
-    { label: 'Reports', icon: 'assessment', route: '/evaluator/reports' },
-    { label: 'Notifications', icon: 'notifications', route: '/evaluator/notifications' },
-    { label: 'Compliance', icon: 'gavel', route: '/evaluator/compliance' }
+    { label: 'Assigned Tenders', icon: 'folder_open', route: '/dashboard/evaluator/assigned-tenders' },
+    { label: 'Bid Evaluation', icon: 'fact_check', route: '/dashboard/evaluator/bid-evaluation' },
+    { label: 'Reports', icon: 'assessment', route: '/dashboard/evaluator/reports' },
+    { label: 'Notifications', icon: 'notifications', route: '/dashboard/evaluator/notifications' },
+    { label: 'Compliance & Ethics', icon: 'gavel', route: '/dashboard/evaluator/compliance' }
   ];
 
-  // Core Functional Modules Card Array
   dashboardCards: DashboardCard[] = [
     {
       title: 'Assigned Tenders',
@@ -61,7 +61,7 @@ export class EvaluationDashboardComponent {
       icon: 'folder_open',
       bgGradient: 'bg-sky-100',
       iconColor: 'text-blue-600',
-      route: '/evaluator/assigned-tenders'
+      route: '/dashboard/evaluator/assigned-tenders'
     },
     {
       title: 'Bid Evaluation',
@@ -69,7 +69,7 @@ export class EvaluationDashboardComponent {
       icon: 'fact_check',
       bgGradient: 'bg-blue-100',
       iconColor: 'text-blue-700',
-      route: '/evaluator/bid-evaluation'
+      route: '/dashboard/evaluator/bid-evaluation'
     },
     {
       title: 'Reports',
@@ -77,7 +77,7 @@ export class EvaluationDashboardComponent {
       icon: 'assessment',
       bgGradient: 'bg-indigo-100',
       iconColor: 'text-indigo-700',
-      route: '/evaluator/reports'
+      route: '/dashboard/evaluator/reports'
     },
     {
       title: 'Notifications',
@@ -85,7 +85,7 @@ export class EvaluationDashboardComponent {
       icon: 'notifications_active',
       bgGradient: 'bg-amber-100',
       iconColor: 'text-amber-600',
-      route: '/evaluator/notifications'
+      route: '/dashboard/evaluator/notifications'
     },
     {
       title: 'Compliance & Ethics',
@@ -93,7 +93,7 @@ export class EvaluationDashboardComponent {
       icon: 'security',
       bgGradient: 'bg-emerald-100',
       iconColor: 'text-emerald-700',
-      route: '/evaluator/compliance'
+      route: '/dashboard/evaluator/compliance'
     }
   ];
 
@@ -103,5 +103,9 @@ export class EvaluationDashboardComponent {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  isBaseDashboard(): boolean {
+    return this.router.url === '/dashboard/evaluator';
   }
 }

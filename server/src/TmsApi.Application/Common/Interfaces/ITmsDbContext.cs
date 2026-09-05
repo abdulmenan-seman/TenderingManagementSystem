@@ -7,6 +7,7 @@ public interface ITmsDbContext
 {
     DbSet<BidderProfile> BidderProfiles { get; }
     DbSet<Tender> Tenders { get; }
+    DbSet<TenderEvaluatorAssignment> TenderEvaluatorAssignments { get; }
     DbSet<TenderDocument> TenderDocuments { get; }
     DbSet<EvaluationCriteria> EvaluationCriteria { get; }
     DbSet<Bid> Bids { get; }

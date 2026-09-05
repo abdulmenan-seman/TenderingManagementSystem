@@ -24,6 +24,34 @@ export class TenderService {
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
 
+  getEvaluators(): Observable<{ id: number; fullName: string; email: string }[]> {
+    return this.http.get<{ id: number; fullName: string; email: string }[]>(`${this.apiUrl}/evaluators`);
+  }
+
+  getTenderCriteria(id: number): Observable<{ id: number; criteriaName: string; description: string; weightPercentage: number; maxScore: number }[]> {
+    return this.http.get<{ id: number; criteriaName: string; description: string; weightPercentage: number; maxScore: number }[]>(`${this.apiUrl}/${id}/evaluation-criteria`);
+  }
+
+  assignEvaluator(tenderId: number, evaluatorId: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${tenderId}/evaluators/${evaluatorId}`, {});
+  }
+
+  createEvaluationCriteria(criteria: {
+    tenderId: number;
+    criteriaName: string;
+    description: string;
+    weightPercentage: number;
+    maxScore: number;
+  }): Observable<{ id: number }> {
+    return this.http.post<{ id: number }>(`${environment.apiUrl}/evaluation-criteria`, criteria).pipe(
+      tap({
+        error: err => this.error.set(
+          err?.error?.detail || err?.error?.title || 'Failed to create evaluation criterion.'
+        )
+      })
+    );
+  }
+
   // ─── READ ──────────────────────────────────────────────────────────────────
 
   /**
